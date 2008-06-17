@@ -1,0 +1,43 @@
+**** Qtopia profile for ezx devices ****
+
+Tested on motorola a1200 only
+
+Implemets:
+
+- basic telephony on ezx phones (*t)
+- keyboard driver and keymap (tested on A1200 only)
+- battary status (*t)
+- lcd backlight control
+- qmake specs
+
+*t: using motorola proprietary  modem daemon "tapisrv" 
+
+Usage:
+
+/somepath/qtopia-opensource-4.3.1/configure -device ezx -Ipath_to_headers -Lpat_to_libs
+
+Required headers:
+
+TAPI_CALL_General.h
+TAPI_Result.h
+TAPI_VOICE_Client.h
+TAPI_InternalClient.h
+TAPI_SECURITY_Client.h
+TAPI_NETWORK_Client.h
+TAPI_BATTERY_Client.h
+TAPI_BATTERY_ClientEmud.h
+TAPI_BATTERY_AppData.h
+
+linux/soundcard.h (from motorola released kernel)
+
+
+Required libs: libezxtapi.so (download from phone)
+
+run flags.sh to view some suggestions
+
+Also requires dbus, bluez and tslib to work.
+
+*** QPE patch ***
+
+qpe.patch enables usage of tapisrv instead of classic AT-modem. 
+set enviroment variable QTOPIA_PHONE_TAPI to 1 to use

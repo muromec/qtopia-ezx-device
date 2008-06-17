@@ -1,0 +1,53 @@
+--- qtopia-opensource-4.3.1.orig/src/server/phone/telephony/phoneserver/base/phoneserver.cpp	2008-02-08 05:56:21.000000000 +0200
++++ qtopia-opensource-4.3.1/src/server/phone/telephony/phoneserver/base/phoneserver.cpp	2008-06-17 01:41:42.000000000 +0300
+@@ -24,6 +24,9 @@
+ #include <qtopiaipcenvelope.h>
+ #ifdef QTOPIA_MODEM
+ #include "phoneserverdummymodem.h"
++#ifdef EZX_TAPISRV
++#include "phoneservertapimodem.h" 
++#endif
+ #include <qmodemservice.h>
+ #endif
+ #include <QValueSpaceObject>
+@@ -85,12 +88,26 @@
+ 
+     // Create the AT-based modem service.  If QTOPIA_PHONE_DUMMY is set,
+     // we create a dummy handler for testing purposes.
++
++    // if QTOPIA_PHONE_TAPI set, we create bridge to motorola proprietary
++    // phoneserver "tapi"
+ #ifdef QTOPIA_MODEM
+-    char *env = getenv( "QTOPIA_PHONE_DUMMY" );
++    char *dummy = getenv( "QTOPIA_PHONE_DUMMY" );
++
++#ifdef EZX_TAPISRV
++    char *tapi  = getenv( "QTOPIA_PHONE_TAPI" );   
++#endif
++
+     QTelephonyService *service;
+-    if ( env && *env == '1' ) {
++    if ( dummy && *dummy == '1' ) {
+         service = new QTelephonyServiceDummy( "modem", this );
+-    } else {
++    } 
++#ifdef EZX_TAPISRV
++    else if ( tapi && *tapi == '1' ) {
++        service = new QTelephonyServiceTapi( "modem", this );
++    }
++#endif
++    else {
+         service = QModemService::createVendorSpecific
+             ( "modem", QString(), this );
+     }
+--- qtopia-opensource-4.3.1.orig/src/server/server.pro	2008-01-11 10:22:46.000000000 +0200
++++ qtopia-opensource-4.3.1/src/server/server.pro	2008-06-17 02:33:52.000000000 +0300
+@@ -178,6 +178,8 @@
+     LIBS += -lXtst
+ }
+ 
++LIBS +=  -lezxtapi
++
+ equals(LAUNCH_METHOD,quicklaunch) {
+     SERVER_SOURCES+=processctrl/quickexe/quickexeapplicationlauncher.cpp
+     SERVER_HEADERS+=processctrl/quickexe/quickexeapplicationlauncher.h
