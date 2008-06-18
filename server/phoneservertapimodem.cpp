@@ -48,10 +48,10 @@
 
 #include "linux/soundcard.h"
 
-static signed int   asyncFd = -1;
-static int phoneFd;
-static unsigned short int msgId[] = { 0x200,0x800,0xa00,0xe00 };
-static signed char tpin[16];
+signed int   asyncFd = -1;
+int phoneFd;
+unsigned short int msgId[] = { 0x200,0x800,0xa00,0xe00 };
+signed char tpin[16];
 
 // call id mapping. tapi id - array index, qtopia id - value
 static QString idconv[256];
@@ -84,7 +84,6 @@ void QPhoneCallTapi::tapi_fd()
 void QPhoneCallTapi::dial( const QDialOptions& options )
 {
 
-    printf("dial enter\n");
     // TODO: test tapi return value
 
     // set qtopia number and call state
@@ -95,19 +94,15 @@ void QPhoneCallTapi::dial( const QDialOptions& options )
     int            result_id;
     unsigned char  callId;
     unsigned char  phoneNum[42];
-    printf ("dial init\n");
 
     // copy qtopia num to tapi num
     strcpy((char *)(phoneNum), (char *) options.number().toAscii().constData()  );
-    printf ("dial copy\n");
 
     // ask tapi for kall
     result_id = TAPI_VOICE_MakeCall( phoneNum, &callId );
-    printf ("dial tapi\n");
 
     // save qtopia edent 
     idconv[callId] = identifier();
-    printf("dial exit\n");
 
 
 }
@@ -608,20 +603,13 @@ QTelephonyServiceTapi::QTelephonyServiceTapi
 {
 
     // connect to tapisrv
-    asyncFd = TAPI_CLIENT_Init(  msgId, 1);
-    //sizeof(msgId) / sizeof(TAPI_APP_MSGID_T)   );
+    asyncFd = TAPI_CLIENT_Init(  msgId, sizeof(msgId) / 2 );
 
     // set handler for incoming data
     QSocketNotifier *sock = new QSocketNotifier(asyncFd, QSocketNotifier::Read);
     connect (sock , SIGNAL(activated (int)  ), this, SLOT(tapi_fd(int)));
 
 
-    // start timer
-    /*if ( service == "modem" ) {
-      QTimer *timer = new QTimer(this);
-      connect(timer, SIGNAL(timeout()), this, SLOT(SignalStrengthUpdate()));
-      timer->start(1500);
-    } */
     SignalStrengthUpdate();
 
 }
