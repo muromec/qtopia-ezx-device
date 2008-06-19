@@ -40,7 +40,7 @@ typedef struct VOICE_CALL_INFO
 {
   unsigned char cid;
   int type;
-  unsigned char phone;
+  unsigned char phone[42];
   int line;
   unsigned char a[82] ;
 } VOICE_CALL_INFO;
