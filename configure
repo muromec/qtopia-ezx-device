@@ -24,8 +24,11 @@
 -extra-qtopiacore-config "-qt-libpng"
 -extra-qtopiacore-config "-qt-zlib"
 -extra-qtopiacore-config "-qt-mouse-tslib" 
+-extra-qtopiacore-config "-no-mouse-pc" 
+-extra-qtopiacore-config "-no-mouse-linuxtp" 
 -extra-qtopiacore-config "-D QT_QWS_SCREENCORDS" 
 -extra-qtopiacore-config "-D QT_QWS_DISABLE_FLUSHCLIPPING" 
+-extra-qtopiacore-config "-no-qt3support "
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
 -DEZX_TAPISRV
