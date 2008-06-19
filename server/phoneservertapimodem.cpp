@@ -649,7 +649,8 @@ void QTelephonyServiceTapi::tapi_fd(int n)
 {
 
       // sound 
-      int mixerFd ;    
+      // FIXME: use defines from kernel headers
+      int mixerFd =-1;    
       int mixerOut = 2;
       int mixerOutGain = 160;
       int mixerIn = 1;
@@ -687,20 +688,42 @@ void QTelephonyServiceTapi::tapi_fd(int n)
                  */
                 case 0:
                   printf("CONNECT\n");
-                    printf("n: connected, opening device\n");
 
+                    // WARNING! dirty hack!
+                    // TODO: move sound initialisation to audio plugin
+
+                    int ret;
+
+                    mixerFd    = open ("/dev/mixer",    O_RDWR); // mixer 
+                    if (mixerFd <= 0)
+                      printf("MIXER ERROR\n");
+
+
+                    ret = ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OUTSRC)  , &mixerOut); // set output to handset
+                    if (ret <0)
+                      printf("setting outsrc error\n");
+
+
+                    ret = ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_RECSRC),   &mixerIn);  // set input  to handset 
+                    if (ret <0)
+                      printf("setting recsrc error\n");
+
+
+                    ret = ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OGAIN), &mixerOutGain); // output gain
+                    if (ret <0)
+                      printf("setting outgain error\n");
+
+                    ret = ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &mixerInGain ); // input gain
+                    if (ret <0)
+                      printf("setting ingain error\n");
+
+                    close(mixerFd);
 
                     /* EZX sound routing */
                     phoneFd = open ("/dev/phone",O_RDONLY); // sound
-                    
-                    mixerFd    = open ("/dev/mixer",    O_RDWR); // mixer 
+                    if (phoneFd <= 0)
+                      printf("opening phone link error\n");
 
-                    ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OUTSRC)  , &mixerOut); // set output to handset
-                    ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_RECSRC),   &mixerIn);  // set input  to handset 
-
-                    ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OGAIN), &mixerOutGain); // output gain
-                    ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &mixerInGain ); // input gain
-                    close(mixerFd);
 
                     printf("sound initialized\n");
 
