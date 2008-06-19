@@ -10,34 +10,47 @@ Implemets:
 - lcd backlight control
 - qmake specs
 
-*t: using motorola proprietary  modem daemon "tapisrv" 
+*t: using motorola proprietary  modem daemon "tapisrv" with disabled security
+    system
 
 Usage:
 
 /somepath/qtopia-opensource-4.3.1/configure -device ezx -Ipath_to_headers -Lpat_to_libs
+make 
+make IMAGE=somepath/image install
 
 Required headers:
 
-TAPI_CALL_General.h
-TAPI_Result.h
-TAPI_VOICE_Client.h
-TAPI_InternalClient.h
-TAPI_SECURITY_Client.h
-TAPI_NETWORK_Client.h
-TAPI_BATTERY_Client.h
-TAPI_BATTERY_ClientEmud.h
-TAPI_BATTERY_AppData.h
 
 linux/soundcard.h (from motorola released kernel)
 
-
 Required libs: libezxtapi.so (download from phone)
 
-run flags.sh to view some suggestions
-
-Also requires dbus, bluez and tslib to work.
+Also requires dbus, bluez and tslib to build and work.
 
 *** QPE patch ***
 
 qpe.patch enables usage of tapisrv instead of classic AT-modem. 
 set enviroment variable QTOPIA_PHONE_TAPI to 1 to use
+
+
+*** Running ***
+
+Upload built image to phone to /ezxlocal/Qtopia/.
+Run dbus-session --system
+Run hcid
+
+Kill motorola native interface:
+kill $(pidof am windowsserver misc1 soundmanager
+
+Run qpe:
+export PATH=/ezxlocal/Qtopia/bin/:$PATH
+export QWS_MOUSE_PROTO="Tslib"
+export TSLIB_TSDEVICE=/dev/touchscreen/ucb1x00
+export QTOPIA_PHONE_DUMMY=0
+export QTOPIA_PHONE_TAPI=1
+export QWS_KEYBOARD=ezxkbdhandler
+
+qpe -qws
+
+Test, send bug reports and patches
