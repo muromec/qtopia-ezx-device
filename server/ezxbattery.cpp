@@ -39,16 +39,6 @@ EzxBattery::EzxBattery(QObject *parent)
 {
     qWarning()<<"EzxBattery::EzxBattery";
 
-    /* needed to register new tapi client */
-    unsigned short int  regMsgId[]   = { 0x0700  };
-    signed int               asyncFd = TAPI_CLIENT_Init( regMsgId, 1 );
-
-    if ( (asyncFd == -1) || (asyncFd == 0) )
-    {
-        qWarning()<<"TAPI client init failed";
-        return;
-    }
-    
     charger = new QPowerSourceProvider(QPowerSource::Wall, "EzxCharger", this);
     battery = new QPowerSourceProvider(QPowerSource::Battery, "EzxBattery", this);
 
