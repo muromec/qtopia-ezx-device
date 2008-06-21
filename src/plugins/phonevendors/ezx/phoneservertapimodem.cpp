@@ -42,10 +42,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "tapiezxbattery.h"
+
 
 
 #include <unistd.h>
 
+#define EZX_VIBRATOR_IOCTL_BASE 0xbb
+#define EZX_VIBRATOR_ENABLE     _IOW (EZX_VIBRATOR_IOCTL_BASE,1,int)
+#define EZX_VIBRATOR_DISABLE    _IO (EZX_VIBRATOR_IOCTL_BASE,2)
 
 signed int   asyncFd = -1;
 int phoneFd;
@@ -582,6 +587,49 @@ void QPinManagerTapi::changePin
     Q_UNUSED(newPin);
     emit changePinResult( type, true );
 }
+
+/*
+ *
+ * Vibro
+ *
+ */
+EZXVibrateAccessory::EZXVibrateAccessory
+        ( QModemService *service )
+    : QVibrateAccessoryProvider( service->service(), service )
+{
+    setSupportsVibrateOnRing( true );
+    setSupportsVibrateNow( false );
+}
+
+EZXVibrateAccessory::~EZXVibrateAccessory()
+{
+}
+
+void EZXVibrateAccessory::setVibrateOnRing( const bool value )
+{
+    setVibrateNow(value);
+}
+
+void EZXVibrateAccessory::setVibrateNow( const bool value )
+{
+
+
+  int level = 3; // TODO: is there vibro level in qtopia?
+
+  // open vibrator device and set mode
+  int vibro = open("/dev/vibrator", O_RDWR);
+  if (value)
+      ioctl(vibro, EZX_VIBRATOR_ENABLE,  &level);
+  else
+      ioctl(vibro, EZX_VIBRATOR_DISABLE, &level);
+  close(vibro);
+
+
+
+  QVibrateAccessoryProvider::setVibrateNow( value );
+}
+
+
 /*
  *
  *
@@ -595,8 +643,8 @@ void QPinManagerTapi::changePin
  *
  */
 QTelephonyServiceTapi::QTelephonyServiceTapi
-        ( const QString& service, QObject *parent )
-    : QTelephonyService( service, parent )
+        ( const QString& service, QSerialIODeviceMultiplexer *mux, QObject *parent )
+    : QModemService( service, mux, parent )
 {
 
     // connect to tapisrv
@@ -787,7 +835,7 @@ void QTelephonyServiceTapi::initialize()
 {
 
 
-  printf ("OK, intializing tapi bridge..\n");
+  printf ("OK, intializing tapi bridge plugin..\n");
     // initialising sersises
     if ( !supports<QSimInfo>() )
         addInterface( new QSimInfoTapi( service(), this ) );
@@ -806,6 +854,12 @@ void QTelephonyServiceTapi::initialize()
 
     if ( !callProvider() )
         setCallProvider( new QPhoneCallProviderTapi( service(), this ) );
+    
+    if ( !supports<QVibrateAccessory>() )
+        addInterface( new EZXVibrateAccessory( this ) );
+
+    TapiEzxBattery* bat;
+    bat = new TapiEzxBattery ( this  );
 
     
 

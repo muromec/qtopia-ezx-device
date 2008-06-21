@@ -22,14 +22,14 @@
 #ifndef PHONESERVERTAPIMODEM_H
 #define PHONESERVERTAPIMODEM_H
 
-
-#include <qtelephonyservice.h>
+#include <QModemService>
 #include <qphonecallprovider.h>
 #include <qphonebook.h>
 #include <qnetworkregistration.h>
 #include <qsiminfo.h>
 #include <qphonerffunctionality.h>
 #include <qpinmanager.h>
+#include <qvibrateaccessory.h>
 
 //#include "tapi.h"
 
@@ -54,6 +54,19 @@ private slots:
     void dialTimeout();
     void tapi_fd();
 };
+
+class  EZXVibrateAccessory : public QVibrateAccessoryProvider
+{
+    Q_OBJECT
+public:
+     EZXVibrateAccessory( QModemService *service );
+    ~ EZXVibrateAccessory();
+
+public slots:
+    void setVibrateNow( const bool value );
+    void setVibrateOnRing( const bool value );
+};
+
 
 class QPhoneCallProviderTapi : public QPhoneCallProvider
 {
@@ -150,11 +163,11 @@ public slots:
                     const QString& newPin );
 };
 
-class QTelephonyServiceTapi : public QTelephonyService
+class QTelephonyServiceTapi : public QModemService
 {
     Q_OBJECT
 public:
-    QTelephonyServiceTapi( const QString& service, QObject *parent = 0 );
+    QTelephonyServiceTapi( const QString& service,  QSerialIODeviceMultiplexer *mux, QObject *parent = 0 );
     ~QTelephonyServiceTapi();
 
     void initialize();
