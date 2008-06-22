@@ -34,11 +34,8 @@
 #include "stdio.h"
 
 TapiEzxBattery::TapiEzxBattery(QObject *parent)
-: QObject(parent), charger(0), battery(0)
+: QObject(parent)
 {
-
-    charger = new QPowerSourceProvider(QPowerSource::Wall, "TapiEzxCharger", this);
-    battery = new QPowerSourceProvider(QPowerSource::Battery, "TapiEzxBattery", this);
 
     QFileMonitor *fileMon;
     fileMon = new QFileMonitor( "/proc/apm", QFileMonitor::Auto, this);
@@ -46,9 +43,8 @@ TapiEzxBattery::TapiEzxBattery(QObject *parent)
             this,SLOT (updateMotStatus() ));
 
 
-    adaptor = new QtopiaIpcAdaptor("QPE/TAPI/Battary");
-
-
+    charger = new QPowerSourceProvider(QPowerSource::Wall, "EzxCharger", this);
+    battery = new QPowerSourceProvider(QPowerSource::Battery, "DefaultBattery", this);
 }
 
 
@@ -63,12 +59,40 @@ void TapiEzxBattery::updateMotStatus()
     TAPI_BATTERY_GetBatteryChargeInfo(&batteryInfo);
     TAPI_BATTERY_GetChargerConnectionStatus( &chargerStatus );
     
-    adaptor->send(MESSAGE(battary(int)),  batteryInfo.bcs);
-    adaptor->send(MESSAGE(battary_charge  (int)), batteryInfo.bcl);
-    adaptor->send(MESSAGE(charger (int)), chargerStatus);
+    battery->setCharge(batteryInfo.bcl);
+    
+    switch(batteryInfo.bcs) {
+        case 0: // present, 
+        case 1:
+            battery->setAvailability(QPowerSource::Available);
+            break;
+        case 2:
+            battery->setAvailability(QPowerSource::NotAvailable);
+            break;
+        case 3:
+            battery->setAvailability(QPowerSource::Failed);
 
+    };
 
+    switch(chargerStatus) {
+        case 0:
+            charger->setAvailability(QPowerSource::Available);
+            break;
+        case 1:
+            charger->setAvailability(QPowerSource::NotAvailable);
+            break;
+        default:
+            charger->setAvailability(QPowerSource::Failed);
+    }
 
+    if (charger->availability() == QPowerSource::Available
+            && battery->availability() == QPowerSource::Available
+            && batteryInfo.bcl < 100) {
+        battery->setCharging(true);
+    }
+    else {
+        battery->setCharging(false);
+    }
 
 
 }

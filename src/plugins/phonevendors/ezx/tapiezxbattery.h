@@ -41,8 +41,6 @@ private:
     QPowerSourceProvider *charger;
     QPowerSourceProvider *battery;
 
-    QtopiaIpcAdaptor* adaptor;
-
     QSocketNotifier *powerNotify;
 
 private Q_SLOTS:
