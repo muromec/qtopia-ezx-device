@@ -28,12 +28,6 @@ Required libs: libezxtapi.so (download from phone)
 
 Also requires dbus, bluez and tslib to build and work.
 
-*** QPE patch ***
-
-qpe.patch enables usage of tapisrv instead of classic AT-modem. 
-set enviroment variable QTOPIA_PHONE_TAPI to 1 to use
-
-
 *** Running ***
 
 Upload built image to phone to /ezxlocal/Qtopia/.
@@ -47,10 +41,12 @@ Run qpe:
 export PATH=/ezxlocal/Qtopia/bin/:$PATH
 export QWS_MOUSE_PROTO="Tslib"
 export TSLIB_TSDEVICE=/dev/touchscreen/ucb1x00
-export QTOPIA_PHONE_DUMMY=0
-export QTOPIA_PHONE_TAPI=1
 export QWS_KEYBOARD=ezxkbdhandler
+export QTOPIA_PHONE_DEVICE="/dev/null:115200"
+export QTOPIA_PHONE_VENDOR=ezx
 
-qpe -qws
+
+qpe -qws & mediaserver -noshow
+
 
 Test, send bug reports and patches
