@@ -31,7 +31,6 @@
 -extra-qtopiacore-config "-no-qt3support "
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
--DEZX_TAPISRV
 -release
 -no-samples
 
