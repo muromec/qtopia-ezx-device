@@ -18,6 +18,11 @@ Usage:
 /somepath/qtopia-opensource-4.3.1/configure -device ezx -Ipath_to_headers -Lpat_to_libs
 make 
 make IMAGE=somepath/image install
+# libsqlite workarround:
+cd src/3rdparty/libraries/sqlite
+sed 's,-Os,-O0,g' -i Makefile.target
+make clean 
+make IMAGE=somepath/image install
 
 Required headers:
 
