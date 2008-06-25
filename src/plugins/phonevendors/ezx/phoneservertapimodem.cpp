@@ -700,19 +700,12 @@ void QSupplementaryServicesTapi::sendSupplementaryServiceData
   
   memset( ussd.request, 0, 400 );
 
-  memcpy( 
-      ussd.request, 
-      (unsigned char*) data.toAscii().constData(), 
-      data.length()
-  );
-
-  ussd.len     = data.length();
+  //ussd.request = data.utf16();
+  ussd.len     = sizeof(unsigned short int) * (data.length() +1);
+  memcpy(ussd.request, (unsigned char*)data.utf16(), ussd.len); 
 
   ret = TAPI_USSD_MakeRequest(&ussd);
   printf("ussd: %s, ret:%d\n",data.toAscii().constData(),ret);
-  printf("usdd data: %s, %d\n", ussd.request, ussd.len);
-
-
 
 
 
@@ -721,7 +714,11 @@ void QSupplementaryServicesTapi::sendSupplementaryServiceData
 
 void QSupplementaryServicesTapi::cusd ( const QString& msg )
 {
-  printf("incoming ussd: %s\n", msg.toAscii().constData());
+
+  emit unstructuredNotification( 
+      QSupplementaryServices::NoFurtherActionRequired,
+      msg 
+  );
 }
 
 
@@ -915,6 +912,32 @@ void QTelephonyServiceTapi::tapi_fd(int n)
               break;
           }
 
+          case 3329:
+          {
+            USSD_RESPONSE* ussd;
+            ussd = (USSD_RESPONSE*) tapi_msg.body;
+
+            unsigned char  text[364];
+            memset(( char*)text,0,ussd->len);
+
+            // invert 
+            for(int i=0; i<sizeof(ussd->text); (i = i+2))
+            {
+                text[i]   = ussd->text[i+1];
+                text[i+1] = ussd->text[i];
+            }
+
+            // only type==0
+            if (! ussd->type)
+              supp->cusd( 
+                  QString::fromUtf16(
+                    (unsigned short int *)text,
+                    ussd->len/2
+                  )   
+              );
+            break;
+          }
+
 
          
           // some other event
@@ -954,8 +977,11 @@ void QTelephonyServiceTapi::initialize()
     if ( !supports<QVibrateAccessory>() )
         addInterface( new EZXVibrateAccessory( this ) );
 
-    if ( !supports<QSupplementaryServices>() )
-              addInterface( new QSupplementaryServicesTapi( this ) );
+    if ( !supports<QSupplementaryServices>() ) 
+    {
+              supp = new QSupplementaryServicesTapi( this );
+              addInterface( supp );
+    }
 
 
     TapiEzxBattery* bat;

@@ -19,7 +19,7 @@
 **
 ****************************************************************************/
 #include "ezxplugin.h"
-#include "phoneservertapimodem.h"
+#include "qtelephonyservicetapi.h"
 
 
 
@@ -37,7 +37,6 @@ EZXPluginImpl::~EZXPluginImpl()
 
 bool EZXPluginImpl::supports( const QString& manufacturer )
 {
-    printf("man: %s\n",manufacturer.toAscii().constData() );
     return  manufacturer.contains( "Motorola" );
 }
 

@@ -12,12 +12,11 @@ class QSupplementaryServicesTapi
 public:
     explicit QSupplementaryServicesTapi( QModemService *service );
     ~QSupplementaryServicesTapi();
+    void cusd( const QString& msg );
 
 public slots:
     void sendSupplementaryServiceData( const QString& data );
 
-private slots:
-    void cusd( const QString& msg );
 
 private:
     QModemService *service;

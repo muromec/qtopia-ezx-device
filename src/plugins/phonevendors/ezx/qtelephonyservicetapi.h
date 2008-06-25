@@ -2,6 +2,7 @@
 #define QTELEPHONYSERVICETAPI_H
 
 #include <QModemService>
+#include <qsupplementaryservicestapi.h>
 class QTelephonyServiceTapi : public QModemService
 {
     Q_OBJECT
@@ -10,6 +11,10 @@ public:
     ~QTelephonyServiceTapi();
 
     void initialize();
+
+private:
+    QSupplementaryServicesTapi *supp;
+
 public slots:
     void tapi_fd(int n);
     void SignalStrengthUpdate();

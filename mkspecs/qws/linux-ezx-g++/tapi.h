@@ -52,6 +52,22 @@ typedef struct _USSD_REQUEST
   unsigned char request[400];
 } USSD_REQUEST;
 
+typedef struct _USSD_RESPONSE
+{
+  unsigned short int id;
+  int type;
+  unsigned short int len;
+  unsigned char text[364];
+} USSD_RESPONSE;
+
+typedef struct _PHONEBOOK_ENTRY
+{
+  unsigned short int index;
+  unsigned char number[42];
+  unsigned char x[82]; // FIXME wtf is this?
+  unsigned char type; 
+} __attribute__( (packed) )  PHONEBOOK_ENTRY;
+
 
 
 extern "C" {
@@ -89,8 +105,15 @@ int TAPI_SECURITY_SetPin1Status(
 // acce
 int TAPI_ACCE_GetSiginalQuality(SQ* quality);
 
-// ussd
+// ussd FIXME
 int TAPI_USSD_MakeRequest ( USSD_REQUEST* msg);
+
+// phonebook
+int TAPI_PHONEBOOK_GetEntryList ( 
+    unsigned short int start,
+    unsigned short int end,
+    PHONEBOOK_ENTRY* book );
+
 
 }
 
