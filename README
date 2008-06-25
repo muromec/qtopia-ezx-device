@@ -31,11 +31,14 @@ Also requires dbus, bluez and tslib to build and work.
 *** Running ***
 
 Upload built image to phone to /ezxlocal/Qtopia/.
-Run dbus-session --system
+
+export LD_LIBRARY_PATH=/ezxlocal/Qtopia/lib
+
+Run dbus-daemon --system
 Run hcid
 
 Kill motorola native interface:
-kill $(pidof am windowsserver misc1 soundmanager
+kill $(pidof am windowsserver misc1 soundmanager)
 
 Run qpe:
 export PATH=/ezxlocal/Qtopia/bin/:$PATH
