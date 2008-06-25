@@ -54,7 +54,7 @@
 
 signed int   asyncFd = -1;
 int phoneFd;
-unsigned short int msgId[] = { 0x200,0x800,0xa00,0xe00 };
+unsigned short int msgId[] = { 0x200,0x800,0xa00,0xe00,0x0D00 };
 signed char tpin[16];
 
 // call id mapping. tapi id - array index, qtopia id - value
@@ -631,6 +631,64 @@ void EZXVibrateAccessory::setVibrateNow( const bool value )
 
 
 /*
+ * Supplementary Services
+ *
+ *
+ */
+
+QSupplementaryServicesTapi::QSupplementaryServicesTapi
+        ( QModemService *service )
+    : QSupplementaryServices( service->service(), service, QCommInterface::Server )
+{
+    this->service = service;
+}
+
+QSupplementaryServicesTapi::~QSupplementaryServicesTapi()
+{
+}
+
+
+
+
+void QSupplementaryServicesTapi::sendSupplementaryServiceData 
+  ( const QString& data )  
+{
+
+
+
+  int ret;
+  USSD_REQUEST ussd;
+
+  
+  memset( ussd.request, 0, 400 );
+
+  memcpy( 
+      ussd.request, 
+      (unsigned char*) data.toAscii().constData(), 
+      data.length()
+  );
+
+  ussd.len     = data.length();
+
+  ret = TAPI_USSD_MakeRequest(&ussd);
+  printf("ussd: %s, ret:%d\n",data.toAscii().constData(),ret);
+  printf("usdd data: %s, %d\n", ussd.request, ussd.len);
+
+
+
+
+
+}
+
+
+void QSupplementaryServicesTapi::cusd ( const QString& msg )
+{
+  printf("incoming ussd: %s\n", msg.toAscii().constData());
+}
+
+
+
+/*
  *
  *
  *
@@ -857,6 +915,10 @@ void QTelephonyServiceTapi::initialize()
     
     if ( !supports<QVibrateAccessory>() )
         addInterface( new EZXVibrateAccessory( this ) );
+
+    if ( !supports<QSupplementaryServices>() )
+              addInterface( new QSupplementaryServicesTapi( this ) );
+
 
     TapiEzxBattery* bat;
     bat = new TapiEzxBattery ( this  );

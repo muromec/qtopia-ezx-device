@@ -30,8 +30,8 @@
 #include <qphonerffunctionality.h>
 #include <qpinmanager.h>
 #include <qvibrateaccessory.h>
+#include <qsupplementaryservices.h>
 
-//#include "tapi.h"
 
 class QPhoneCallTapi : public QPhoneCallImpl
 {
@@ -175,5 +175,25 @@ public slots:
     void tapi_fd(int n);
     void SignalStrengthUpdate();
 };
+
+class QSupplementaryServicesTapi
+            : public QSupplementaryServices
+{
+    Q_OBJECT
+public:
+    explicit QSupplementaryServicesTapi( QModemService *service );
+    ~QSupplementaryServicesTapi();
+
+public slots:
+    void sendSupplementaryServiceData( const QString& data );
+
+private slots:
+    void cusd( const QString& msg );
+
+private:
+    QModemService *service;
+};
+
+
 
 #endif // PHONESERVERTAPIMODEM_H

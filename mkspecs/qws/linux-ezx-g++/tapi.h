@@ -46,6 +46,11 @@ typedef struct VOICE_CALL_INFO
 } VOICE_CALL_INFO;
 
 
+typedef struct _USSD_REQUEST 
+{
+  unsigned char len;
+  unsigned char request[400];
+} USSD_REQUEST;
 
 
 
@@ -83,6 +88,9 @@ int TAPI_SECURITY_SetPin1Status(
     const unsigned char   mode); 
 // acce
 int TAPI_ACCE_GetSiginalQuality(SQ* quality);
+
+// ussd
+int TAPI_USSD_MakeRequest ( USSD_REQUEST* msg);
 
 }
 
