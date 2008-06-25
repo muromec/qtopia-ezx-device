@@ -28,7 +28,17 @@
 *
 */
 
-#include "phoneservertapimodem.h"
+#include "qnetworkregistrationtapi.h"
+#include "qphonebooktapi.h"
+#include "qphonecallprovidertapi.h"
+#include "qphonecalltapi.h"
+#include "qphonerffunctionalitytapi.h"
+#include "qpinmanagertapi.h"
+#include "qsiminfotapi.h"
+#include "qsupplementaryservicestapi.h"
+#include "qtelephonyservicetapi.h"
+#include "ezxvibrateaccessory.h"
+
 #include <qvaluespace.h>
 #include <QSignalSourceProvider>
 #include <qtimer.h>
