@@ -44,3 +44,5 @@
 #ifndef V4L_VIDEO_DEVICE
 #define V4L_VIDEO_DEVICE            "" //no video
 #endif
+
+#define QTOPIA_ZONEINFO_PATH "/ezxlocal/Qtopia/zoneinfo/"
