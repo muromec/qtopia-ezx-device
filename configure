@@ -29,6 +29,7 @@
 -extra-qtopiacore-config "-D QT_QWS_SCREENCORDS" 
 -extra-qtopiacore-config "-D QT_QWS_DISABLE_FLUSHCLIPPING" 
 -extra-qtopiacore-config "-no-qt3support "
+-extra-qtopiacore-config "-plugin-sql-sqlite" 
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
 -release
