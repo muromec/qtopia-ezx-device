@@ -260,13 +260,41 @@ QPhoneBookTapi::~QPhoneBookTapi()
 void QPhoneBookTapi::getEntries( const QString& store )
 {
     QList<QPhoneBookEntry> list;
+
+#ifdef TAPI_SM
+    int max = 40;
+    int ret;
+   
     if ( store == "SM" ) {
-        QList<QPhoneBookEntry>::ConstIterator iter;
-        for ( iter = ents.begin(); iter != ents.end(); ++iter ) {
-            if ( ! (*iter).number().isEmpty() )
-                list += *iter;
+      // 
+      printf("SM\n");
+      PHONEBOOK_ENTRY  book[max]; 
+      memset (book, 0, sizeof(book));
+      ret = TAPI_PHONEBOOK_GetEntryList( 1, max, book ); // FIXME: end
+      printf("ret: %d\n",ret);
+      for ( int i = 0; i < max; i++ ) {
+        QPhoneBookEntry *e = new QPhoneBookEntry();
+        e->setIndex(book[i].index);
+        e->setNumber((char*)book[i].number);
+        e->setText(  (char*)book[i].x);
+
+        if (book[i].number) {
+          list += *e;
+          printf("SM %d: %d, %s, %s, %d\n",
+            i,
+            book[i].index, 
+            book[i].number, 
+            book[i].x,
+            book[i].type
+          );
         }
+
+
+      }
+
     }
+
+#endif
     emit entries( store, list );
 }
 
