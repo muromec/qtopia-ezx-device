@@ -17,7 +17,7 @@
 -dbus
 -bluetooth
 -sound-system oss 
--extra-qtopiacore-config "-depths 18"
+-extra-qtopiacore-config "-depths 16,18"
 -extra-qtopiacore-config "-qt-libjpeg"
 -extra-qtopiacore-config "-qt-libmng"
 -extra-qtopiacore-config "-plugin-gfx-transformed" 
