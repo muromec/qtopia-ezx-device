@@ -45,18 +45,11 @@
 
 #include <QSocketNotifier>
 
-#include <sys/ioctl.h>  
 #include "tapi.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #include "tapiezxbattery.h"
 
 
-
-#include <unistd.h>
 
 
 signed int   asyncFd = -1;
