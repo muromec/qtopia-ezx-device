@@ -8,6 +8,8 @@ class QPinManagerTapi : public QPinManager
 public:
     QPinManagerTapi( const QString& service, QObject *parent );
     ~QPinManagerTapi();
+private:
+    signed char tpin[16];
 
 public slots:
     void querySimPinStatus();

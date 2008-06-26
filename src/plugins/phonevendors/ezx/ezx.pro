@@ -15,7 +15,16 @@ HEADERS		=  ezxplugin.h  tapiezxbattery.h \
  qsupplementaryservicestapi.h \
  qtelephonyservicetapi.h \
  ezxvibrateaccessory.h
-SOURCES	        =  ezxplugin.cpp phoneservertapimodem.cpp tapiezxbattery.cpp
+SOURCES	        =  ezxplugin.cpp phoneservertapimodem.cpp tapiezxbattery.cpp \
+  qphonecallprovidertapi.cpp \
+  qphonebooktapi.cpp \
+  qnetworkregistrationtapi.cpp \
+  qsiminfotapi.cpp \
+  qphonerffunctionalitytapi.cpp \
+  qpinmanagertapi.cpp \
+  ezxvibrateaccessory.cpp \
+  qsupplementaryservicestapi.cpp
+
 
 depends(libraries/qtopiaphonemodem)
 
