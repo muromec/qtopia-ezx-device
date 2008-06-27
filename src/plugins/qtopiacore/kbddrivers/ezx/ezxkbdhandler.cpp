@@ -199,7 +199,11 @@ void EZXKbdHandler::readKbdData()
             case 0x19: qtKeyCode = Qt::Key_F4; break;
             case 0x20: qtKeyCode = Qt::Key_F7; break;   // Key +
 
+            // flip
+            case 0x1b: qtKeyCode = Qt::Key_Flip; break;
 
+            // unknown
+            default: printf("unknown key: %x, press: %d\n",driverKeyCode, isPressed);
 
         }
 
