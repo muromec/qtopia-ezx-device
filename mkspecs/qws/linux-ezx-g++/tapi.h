@@ -89,6 +89,21 @@ int TAPI_VOICE_MakeCall   (unsigned char num[42],  unsigned char* cid);
 int TAPI_VOICE_RejectCall (unsigned char cid,  int type); 
 int TAPI_VOICE_DropCurrentCall (unsigned char cid);
 int TAPI_VOICE_AnswerCall (unsigned char cid,  int type); 
+int TAPI_VOICE_HoldCall (unsigned char cid); 
+int TAPI_VOICE_JoinCall (
+    unsigned char cid,
+    unsigned char cid);
+int TAPI_VOICE_RetrieveCall (unsigned char cid);
+int TAPI_VOICE_MakeDtmfTone (
+    unsigned char dtfmChar,
+    int state);
+int TAPI_VOICE_TransferCall (
+    unsigned char cid,
+    unsigned char num[42],
+    unsigned char* newCid);
+int TAPI_VOICE_DropAllCall(void);
+      
+
 
 // net
 int TAPI_NETWORK_GetServiceProviderName( SP_NAME* name);

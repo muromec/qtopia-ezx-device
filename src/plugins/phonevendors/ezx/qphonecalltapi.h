@@ -20,9 +20,11 @@ public:
     void tone( const QString& tones );
     void transfer( const QString& number );
 
+private:
+     unsigned char get_cid(void);
+
 private slots:
     void dialTimeout();
-    void tapi_fd();
 };
 
 

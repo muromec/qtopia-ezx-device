@@ -78,9 +78,16 @@ QPhoneCallTapi::~QPhoneCallTapi()
 {
     // Nothing to do here.
 }
-void QPhoneCallTapi::tapi_fd()
+
+unsigned char QPhoneCallTapi::get_cid(void)
 {
- 
+  for (int i=0; i<255; i++)
+    {
+      if  (idconv[i] == identifier()) 
+        return i;
+
+    }
+  return 255;
 
 }
 
@@ -113,22 +120,11 @@ void QPhoneCallTapi::dial( const QDialOptions& options )
 void QPhoneCallTapi::hangup( QPhoneCall::Scope )
 {
 
-    // qtopia asked for hungup
-    printf("hangup!!!\n");
 
-    unsigned char      callId;;
+    unsigned char  callId = get_cid();
 
     // whe have qtopia ident, find tapi id
     // TODO: if not found - kill somewho
-    for (int i=0; i<255; i++)
-    {
-      if  (idconv[i] == identifier()) {
-        printf ("found: %d\n",i);
-        callId = i;
-        break;
-      }
-
-    }
     printf("dropping %d\n",callId);
 
 
@@ -170,28 +166,42 @@ void QPhoneCallTapi::accept()
 
 void QPhoneCallTapi::hold()
 {
-  // TODO: i don`t know ho it must work
-    emit requestFailed( QPhoneCall::HoldFailed );
+    unsigned char  callId = get_cid();
+
+    TAPI_VOICE_HoldCall(callId);
 }
 
 void QPhoneCallTapi::activate( QPhoneCall::Scope )
 {
-  // TODO
+    TAPI_VOICE_RetrieveCall(get_cid());
 }
 
 void QPhoneCallTapi::join( bool )
 {
-  // TODO
+   //TAPI_VOICE_JoinCall(cid,hcid);
 }
 
-void QPhoneCallTapi::tone( const QString& )
+void QPhoneCallTapi::tone( const QString& qtone)
 {
-  // TODO: is its DTFM?
+  unsigned char tone = qtone.toAscii().constData()[0];
+
+
+  TAPI_VOICE_MakeDtmfTone(tone,0);
+  TAPI_VOICE_MakeDtmfTone(tone,1);
 }
 
-void QPhoneCallTapi::transfer( const QString& )
+void QPhoneCallTapi::transfer( const QString& num )
 {
-  // TODO: 
+  unsigned char newCallId; 
+  unsigned char phoneNum[42];
+
+  // copy qtopia num to tapi num
+  strcpy(
+      (char *)(phoneNum), 
+      (char *)num.toAscii().constData()  
+  );
+
+  TAPI_VOICE_TransferCall(get_cid(), phoneNum, &newCallId);
 }
 
 void QPhoneCallTapi::dialTimeout()
@@ -223,6 +233,9 @@ QTelephonyServiceTapi::QTelephonyServiceTapi
     // connect to tapisrv
     asyncFd = TAPI_CLIENT_Init(  msgId, sizeof(msgId) / 2 );
 
+    // cleanup
+    TAPI_VOICE_DropAllCall();
+
     // set handler for incoming data
     QSocketNotifier *sock = new QSocketNotifier(asyncFd, QSocketNotifier::Read);
     connect (sock , SIGNAL(activated (int)  ), this, SLOT(tapi_fd(int)));
@@ -241,7 +254,7 @@ void QTelephonyServiceTapi::SignalStrengthUpdate() {
     int ss;
     
     // ask tapi
-    int ret = TAPI_ACCE_GetSiginalQuality( &sq );
+    TAPI_ACCE_GetSiginalQuality( &sq );
 
     QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
     // rssi - 0-31, 99 - unknown
@@ -334,6 +347,11 @@ void QTelephonyServiceTapi::tapi_fd(int n)
                     // FIXME: clean id mapping?
 
                     break;
+                case 5:
+                  call = callProvider()->findCall( idconv[tapi_call->cid]);
+                  if (call)
+                    call->setState (QPhoneCall::Hold);
+                  break;
  
                 default:
                   printf ("unhandled voice call status change: %d\n", 
