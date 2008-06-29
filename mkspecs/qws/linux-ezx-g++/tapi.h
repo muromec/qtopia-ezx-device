@@ -120,7 +120,7 @@ int TAPI_SECURITY_SetPin1Status(
 // acce
 int TAPI_ACCE_GetSiginalQuality(SQ* quality);
 
-// ussd FIXME
+// ussd 
 int TAPI_USSD_MakeRequest ( USSD_REQUEST* msg);
 
 // phonebook
@@ -129,6 +129,8 @@ int TAPI_PHONEBOOK_GetEntryList (
     unsigned short int end,
     PHONEBOOK_ENTRY* book );
 
+// sim info
+int TAPI_ACCE_GetImsi(unsigned char id[16]);
 
 }
 
