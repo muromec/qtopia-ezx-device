@@ -123,6 +123,9 @@ void QPhoneCallTapi::hangup( QPhoneCall::Scope )
 
     unsigned char  callId = get_cid();
 
+    if (callId == 255)
+      return ;
+
     // whe have qtopia ident, find tapi id
     // TODO: if not found - kill somewho
     printf("dropping %d\n",callId);
@@ -274,8 +277,140 @@ void QTelephonyServiceTapi::SignalStrengthUpdate() {
 
 /*
  *
+ * Tapi voice call status changed
+ *
+ */
+
+void QTelephonyServiceTapi::voice_state(VOICE_CALL_STATUS *tapi_call) {
+
+    char id[200]; // for qtopia call id
+    sprintf(id,"%d",tapi_call->cid); // copy tapi id (short) to qtopia id (long)
+    QPhoneCallImpl *call; 
+
+    switch ( (signed int)tapi_call->status )
+    {   
+        /* 
+         * tapi voice call connected. setting qtopia state
+         */
+        case 0:
+          printf("CONNECT\n");
+
+            /* find call in qtopia pool by qtopia id
+             * tapi id used as array index
+             * if found set state as connected
+             */
+            call = callProvider()->findCall( idconv[tapi_call->cid]);
+            if (call )
+             call->setState (QPhoneCall::Connected);
+
+
+            break;
+        
+        /*
+         * tapi voice call disconnected. 
+         */
+        case 1:
+            printf ("DISCONNECT.\n");
+            
+            /* try to find call by id */
+            call = callProvider()->findCall( idconv[tapi_call->cid] ) ;
+
+            if (call) // if found.. 
+            {
+             printf("state: %d\n",call->state());
+
+             call->setState (QPhoneCall::HangupRemote);
+             printf("n: remote hangup\n");
+
+            } else { // if not... kill soomewho
+              printf ("Hmmmm...\n");
+            }
+
+            // FIXME: clean id mapping?
+
+            break;
+        /*
+         * tapi voice call hold
+         */
+        case 5:
+          call = callProvider()->findCall( idconv[tapi_call->cid]);
+          if (call)
+            call->setState (QPhoneCall::Hold);
+          break;
+
+        default:
+          printf ("unhandled voice call status change: %d\n", 
+              (signed int)tapi_call->status );
+        
+    }
+
+}
+
+/*
+ * Incoming tapi call
+ */
+
+void QTelephonyServiceTapi::incoming(VOICE_CALL_INFO *tapi_call){
+     printf("RING!\n");
+
+
+     // set mapping between qtopia call id and tapi call id
+     char id[50];
+     sprintf(id,"%d",tapi_call->cid);
+     idconv[tapi_call->cid] = QString(id);
+
+     // if call with tapi id not found qtopia pool - add
+     if ( !callProvider()->findCall(id)) 
+     {
+       QPhoneCallTapi * call = new QPhoneCallTapi(callProvider(),id,"Voice");
+       call->setNumber( (char *) tapi_call->phone );
+       call->setState (QPhoneCall::Incoming);
+     } 
+}
+/*
+ *  signal quality update
+ */
+void QTelephonyServiceTapi::signal_quality(int quality){
+      
+      QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
+
+      // set qtopia level 0-100
+      prov->setSignalStrength( quality * 20 );
+
+      // if tapi level is 0 - set NotAvailable
+      if (quality)
+        prov->setAvailability( QSignalSource::Available );
+      else
+        prov->setAvailability( QSignalSource::NotAvailable );
+
+}
+/* 
+ *  ussd response
+ */
+void QTelephonyServiceTapi::ussd_response(USSD_RESPONSE *ussd){
+    unsigned char  text[364];
+    memset(( char*)text,0,ussd->len);
+
+    // invert 
+    for(int i=0; i<sizeof(ussd->text); (i = i+2))
+    {
+        text[i]   = ussd->text[i+1];
+        text[i+1] = ussd->text[i];
+    }
+
+    // only type==0
+    if (! ussd->type)
+      supp->cusd( 
+          QString::fromUtf16(
+            (unsigned short int *)text,
+            ussd->len/2
+          )   
+      );
+
+}
+/*
+ *
  * this function handles incoming messages from tapi server
- * TODO: split this
  *
  */
 void QTelephonyServiceTapi::tapi_fd(int n)
@@ -293,159 +428,12 @@ void QTelephonyServiceTapi::tapi_fd(int n)
        */
       switch ( (unsigned int)tapi_msg.id )
       {
-        /* 
-         * status of voice call changed
-         */
-        case 513:
-        { 
-            printf ("voice notify from tapi\n");
-            // get call info
-            VOICE_CALL_STATUS*    tapi_call;
-            tapi_call = (VOICE_CALL_STATUS*)tapi_msg.body;
-            
-            char id[200]; // for qtopia call id
-            sprintf(id,"%d",tapi_call->cid); // copy tapi id (short) to qtopia id (long)
-            QPhoneCallImpl *call; 
-
-            switch ( (signed int)tapi_call->status )
-            {   
-                /* 
-                 * tapi voice call connected. setting qtopia state
-                 */
-                case 0:
-                  printf("CONNECT\n");
-
-                    /* find call in qtopia pool by qtopia id
-                     * tapi id used as array index
-                     * if found set state as connected
-                     */
-                    call = callProvider()->findCall( idconv[tapi_call->cid]);
-                    if (call )
-                     call->setState (QPhoneCall::Connected);
-
-
-                    break;
-                
-                /*
-                 * tapi voice call disconnected. 
-                 */
-                case 1:
-                    printf ("DISCONNECT.\n");
-                    
-                    /* try to find call by id */
-                    call = callProvider()->findCall( idconv[tapi_call->cid] ) ;
-
-                    if (call) // if found.. 
-                    {
-                     printf("state: %d\n",call->state());
-
-                     call->setState (QPhoneCall::HangupRemote);
-                     printf("n: remote hangup\n");
-
-                    } else { // if not... kill soomewho
-                      printf ("Hmmmm...\n");
-                    }
-
-                    // FIXME: clean id mapping?
-
-                    break;
-                case 5:
-                  call = callProvider()->findCall( idconv[tapi_call->cid]);
-                  if (call)
-                    call->setState (QPhoneCall::Hold);
-                  break;
- 
-                default:
-                  printf ("unhandled voice call status change: %d\n", 
-                      (signed int)tapi_call->status );
-                
-            }
-            break;
-          }
-          /*
-           * incoming call event 
-           */
-          case 514:
-          {
-             printf("RING!\n");
-
-             // get tapi call info
-             VOICE_CALL_INFO*  tapi_call;
-             tapi_call = (VOICE_CALL_INFO*)tapi_msg.body;
-
-             // set mapping between qtopia call id and tapi call id
-             char id[50];
-             sprintf(id,"%d",tapi_call->cid);
-             idconv[tapi_call->cid] = QString(id);
-
-             // if call with tapi id not found qtopia pool - add
-             if ( !callProvider()->findCall(id)) 
-             {
-               QPhoneCallTapi * call = new QPhoneCallTapi(callProvider(),id,"Voice");
-               call->setNumber( (char *) tapi_call->phone );
-               call->setState (QPhoneCall::Incoming);
-             } 
-
-          }
-          /*
-           * signal quality change event
-           * async call from tapi
-           */
-
-          case 1793:
-          {
-              QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
-
-              // get level tapi value 0-5
-              int sq;
-              sq = *( (int*)tapi_msg.body ); 
-
-              // set qtopia level 0-100
-              prov->setSignalStrength( sq * 20 );
-
-              // if tapi level is 0 - set NotAvailable
-              if (sq)
-                prov->setAvailability( QSignalSource::Available );
-              else
-                prov->setAvailability( QSignalSource::NotAvailable );
-
-              break;
-          }
-
-          case 3329:
-          {
-            USSD_RESPONSE* ussd;
-            ussd = (USSD_RESPONSE*) tapi_msg.body;
-
-            unsigned char  text[364];
-            memset(( char*)text,0,ussd->len);
-
-            // invert 
-            for(int i=0; i<sizeof(ussd->text); (i = i+2))
-            {
-                text[i]   = ussd->text[i+1];
-                text[i+1] = ussd->text[i];
-            }
-
-            // only type==0
-            if (! ussd->type)
-              supp->cusd( 
-                  QString::fromUtf16(
-                    (unsigned short int *)text,
-                    ussd->len/2
-                  )   
-              );
-            break;
-          }
-
-
-         
-          // some other event
-           default:
-              printf ("unhandled tapi msg. id: %d\n" , (int)tapi_msg.id );
-
-
-         }
+        case 513:  voice_state( (VOICE_CALL_STATUS*)tapi_msg.body ); break;
+        case 514:  incoming(    (VOICE_CALL_INFO*)  tapi_msg.body ); break;
+        case 1793: signal_quality(*((int*)          tapi_msg.body)); break;
+        case 3329: ussd_response((USSD_RESPONSE*)   tapi_msg.body ); break;
+        default: printf ("tapi msg. id: %d\n" , (int)tapi_msg.id );
+      }
 
   
 

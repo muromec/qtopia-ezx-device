@@ -3,6 +3,7 @@
 
 #include <QModemService>
 #include <qsupplementaryservicestapi.h>
+#include "tapi.h"
 class QTelephonyServiceTapi : public QModemService
 {
     Q_OBJECT
@@ -14,6 +15,10 @@ public:
 
 private:
     QSupplementaryServicesTapi *supp;
+    void voice_state( VOICE_CALL_STATUS *tapi_call);
+    void incoming   ( VOICE_CALL_INFO   *tapi_call);
+    void signal_quality(int quality);
+    void ussd_response(USSD_RESPONSE *ussd);
 
 public slots:
     void tapi_fd(int n);
