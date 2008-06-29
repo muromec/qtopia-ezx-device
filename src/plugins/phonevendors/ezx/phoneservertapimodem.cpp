@@ -232,6 +232,8 @@ QTelephonyServiceTapi::QTelephonyServiceTapi
 
     // connect to tapisrv
     asyncFd = TAPI_CLIENT_Init(  msgId, sizeof(msgId) / 2 );
+    if (asyncFd < 1) 
+      printf ("ERROR: cannot connect to tapi! Fix your setup!\n");
 
     // cleanup
     TAPI_VOICE_DropAllCall();
