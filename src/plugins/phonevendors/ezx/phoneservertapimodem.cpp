@@ -54,7 +54,7 @@
 
 signed int   asyncFd = -1;
 int phoneFd;
-unsigned short int msgId[] = { 0x200,0x800,0xa00,0xe00,0x0D00 };
+unsigned short int msgId[] = { 0x200,0x700,0x800,0xa00,0xe00,0x0D00 };
 
 // call id mapping. tapi id - array index, qtopia id - value
 static QString idconv[256];
@@ -262,8 +262,9 @@ void QTelephonyServiceTapi::SignalStrengthUpdate() {
     TAPI_ACCE_GetSiginalQuality( &sq );
 
     QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
+    printf("rssi: %d, %d\n",sq.rssi, (sq.rssi *  100 / 31));
     // rssi - 0-31, 99 - unknown
-    if (sq.rssi == 99){ // singan level unknown 
+    if ((sq.rssi == 99) or (sq.rssi == 100) ){ // singan level unknown 
       ss = -1;
       prov->setAvailability( QSignalSource::NotAvailable ); // ??
     } else {
@@ -428,11 +429,29 @@ void QTelephonyServiceTapi::tapi_fd(int n)
        */
       switch ( (unsigned int)tapi_msg.id )
       {
-        case 513:  voice_state( (VOICE_CALL_STATUS*)tapi_msg.body ); break;
-        case 514:  incoming(    (VOICE_CALL_INFO*)  tapi_msg.body ); break;
-        case 1793: signal_quality(*((int*)          tapi_msg.body)); break;
-        case 3329: ussd_response((USSD_RESPONSE*)   tapi_msg.body ); break;
-        default: printf ("tapi msg. id: %d\n" , (int)tapi_msg.id );
+        case 0x201: voice_state( (VOICE_CALL_STATUS*)tapi_msg.body ); break;
+        case 0x202: incoming(    (VOICE_CALL_INFO*)  tapi_msg.body ); break;
+        case 0x701: signal_quality(*((int*)          tapi_msg.body)); break;
+        case 0x702: printf("sa: %d\n",(int) *tapi_msg.body); break; //  NOP?
+        case 0x703: printf("r : %d\n",(int) *tapi_msg.body); break; // QTelephony::RegistrationHome / QTelephony::RegistrationRoaming
+        case 0x706: printf("searching\n"); break; // QTelephony::RegistrationSearching
+        case 0x70a: printf("registered\n"); break; // set opname
+        case 0x70c: printf("deregistered\n");break; // QTelephony::RegistrationNone
+        
+        case 0x804: printf("grps: %d\n",(int) *tapi_msg.body); break;
+        case 0x80b: printf("egprs: %d\n",(int) *tapi_msg.body); break;
+
+        // 0x702 - service availability
+        // 0x703 - roaming status
+        // 0x706 - searching 
+        // 0x70a - registered
+        // 0x70c - deregistered
+
+        // 0x804 - gprs attach status
+        // 0x80b - egprs status
+
+        case 0xd01: ussd_response((USSD_RESPONSE*)   tapi_msg.body ); break;
+        default: printf ("tapi %x body: %x\n" , (int)tapi_msg.id, tapi_msg.body) ;
       }
 
   

@@ -1,5 +1,5 @@
 #include "qphonerffunctionalitytapi.h"
-#include "stdio.h"
+#include "tapi.h"
 
 /* 
  *
@@ -18,13 +18,22 @@ QPhoneRfFunctionalityTapi::~QPhoneRfFunctionalityTapi()
 
 void QPhoneRfFunctionalityTapi::forceLevelRequest()
 {
-    setValue( "level", qVariantFromValue( Full ) );
-    printf("level..\n");
+    // force pin request here?
+    int level;
+    TAPI_ACCE_GetRfMode(&level);
+    if (level)
+      setValue( "level", qVariantFromValue( DisableTransmitAndReceive ) );
+    else
+      setValue( "level", qVariantFromValue( Full ) );
+
     emit levelChanged();
 }
 
 void QPhoneRfFunctionalityTapi::setLevel( QPhoneRfFunctionality::Level level )
 {
-    Q_UNUSED(level);
+  if (level == 1)
+    TAPI_ACCE_SetRfMode(0);
+  else
+    TAPI_ACCE_SetRfMode(1);
 }
 
