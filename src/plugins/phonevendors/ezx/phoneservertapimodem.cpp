@@ -47,7 +47,7 @@
 
 #include "tapi.h"
 
-#include "tapiezxbattery.h"
+#include "ezxbattery.h"
 
 
 
@@ -491,8 +491,9 @@ void QTelephonyServiceTapi::initialize()
     }
 
 
-    TapiEzxBattery* bat;
-    bat = new TapiEzxBattery ( this  );
+    //TapiEzxBattery* bat;
+    EzxBattery* bat;
+    bat = new EzxBattery ( this  );
 
     
 

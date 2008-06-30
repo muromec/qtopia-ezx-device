@@ -19,8 +19,8 @@
 **
 ****************************************************************************/
 
-#ifndef _TAPIEZXBATTERY_H_
-#define _TAPIEZXBATTERY_H_
+#ifndef _EZXBATTERY_H_
+#define _EZXBATTERY_H_
 
 #include <QObject>
 #include <QSocketNotifier>
@@ -29,11 +29,11 @@
 class QPowerSourceProvider;
 
 
-class TapiEzxBattery : public QObject
+class EzxBattery : public QObject
 {
 Q_OBJECT
 public:
-    TapiEzxBattery(QObject *parent = 0);
+    EzxBattery(QObject *parent = 0);
 
 
 private:
@@ -49,4 +49,4 @@ private Q_SLOTS:
     
 };
 
-#endif // _TAPIEZXBATTERY_H_
+#endif // _EZXBATTERY_H_

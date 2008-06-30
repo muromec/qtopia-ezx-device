@@ -4,7 +4,7 @@ TARGET=ezxvendor
 CONFIG+=no_tr
 LIBS += -lezxtapi
 
-HEADERS		=  ezxplugin.h  tapiezxbattery.h \
+HEADERS		=  ezxplugin.h  ezxbattery.h \
  qnetworkregistrationtapi.h \
  qphonebooktapi.h \
  qphonecallprovidertapi.h \
@@ -15,7 +15,7 @@ HEADERS		=  ezxplugin.h  tapiezxbattery.h \
  qsupplementaryservicestapi.h \
  qtelephonyservicetapi.h \
  ezxvibrateaccessory.h
-SOURCES	        =  ezxplugin.cpp phoneservertapimodem.cpp tapiezxbattery.cpp \
+SOURCES	        =  ezxplugin.cpp phoneservertapimodem.cpp ezxbattery.cpp \
   qphonecallprovidertapi.cpp \
   qphonebooktapi.cpp \
   qnetworkregistrationtapi.cpp \
