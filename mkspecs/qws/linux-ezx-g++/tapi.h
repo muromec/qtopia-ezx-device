@@ -132,6 +132,9 @@ int TAPI_PHONEBOOK_GetEntryList (
 // sim info
 int TAPI_ACCE_GetImsi(unsigned char id[16]);
 
+// rf 0 - on , 1 - w
+int TAPI_ACCE_SetRfMode(int rf);
+int TAPI_ACCE_GetRfMode(int* rf);
 }
 
 
