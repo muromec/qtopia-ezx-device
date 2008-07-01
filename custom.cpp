@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
+#include <unistd.h>
 
 
 #define FRAMEBUFFER_DEVICE "/dev/fb0"
@@ -23,17 +24,28 @@
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {
     // FIXME
-    return 20;
+    return 100;
 }
 
 QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 {
-  // TODO: what is 2463 and how to hadle it?
-  // TODO: handle 0 as backlight 
+  // TODO: notify apmd
   int fbh;
   int ret;
   fbh = open(FRAMEBUFFER_DEVICE, O_RDWR);
-  ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
+
+  if (b > 100)
+    b = 100;
+
+  if (b) {
+    ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_ON);
+    ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
+  } else {
+    ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_OFF);
+  }
+
+
+  close(fbh);
 
 }
 
