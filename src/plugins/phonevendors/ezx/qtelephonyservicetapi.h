@@ -3,6 +3,7 @@
 
 #include <QModemService>
 #include <qsupplementaryservicestapi.h>
+#include "qsmssendertapi.h"
 #include "tapi.h"
 class QTelephonyServiceTapi : public QModemService
 {
@@ -15,6 +16,7 @@ public:
 
 private:
     QSupplementaryServicesTapi *supp;
+    QSMSSenderTapi *sms_sender;
     void voice_state( VOICE_CALL_STATUS *tapi_call);
     void incoming   ( VOICE_CALL_INFO   *tapi_call);
     void signal_quality(int quality);

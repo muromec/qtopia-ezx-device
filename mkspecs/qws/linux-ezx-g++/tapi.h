@@ -46,7 +46,7 @@ typedef struct VOICE_CALL_INFO
 } VOICE_CALL_INFO;
 
 
-typedef struct _USSD_REQUEST 
+typedef struct _USSD_REQUEST
 {
   unsigned char len;
   unsigned char request[400];
@@ -65,9 +65,22 @@ typedef struct _PHONEBOOK_ENTRY
   unsigned short int index;
   unsigned char number[42];
   unsigned char x[82]; // FIXME wtf is this?
-  unsigned char type; 
+  unsigned char type;
 } __attribute__( (packed) )  PHONEBOOK_ENTRY;
 
+typedef struct  _SMS_PDU
+{
+    unsigned char   tpdu_len;
+    unsigned char   pdu_len;
+    unsigned char   pdu_buf[191];
+} SMS_PDU;
+
+typedef struct  _SMS_SEND_RESP
+{
+    unsigned int       seq_n; ///< The sequence number of the sent short message
+    unsigned char      msg_ref_n;   ///< The message reference number of the previously submitted SMS (only valid when sentResult is TAPI_RESULT_SUCC)
+    int   result;  ///< The result of the sent message
+} SMS_SEND_RESP;
 
 
 extern "C" {
@@ -77,19 +90,19 @@ unsigned int TAPI_CLIENT_Init(
     const unsigned short int*     a,
     unsigned char                 b ) ;
 // parse async message
-int TAPI_CLIENT_ReadAndMallocMsg(signed int fd, TAPI_MSG* msg);  
+int TAPI_CLIENT_ReadAndMallocMsg(signed int fd, TAPI_MSG* msg);
 
-// power 
+// power
 int TAPI_BATTERY_GetBatteryChargeInfo (EZX_BATT_INF* a);
 int TAPI_BATTERY_GetStatus (int* a);
 int TAPI_BATTERY_GetChargerConnectionStatus(int* a);
 
-// voice 
+// voice
 int TAPI_VOICE_MakeCall   (unsigned char num[42],  unsigned char* cid);
-int TAPI_VOICE_RejectCall (unsigned char cid,  int type); 
+int TAPI_VOICE_RejectCall (unsigned char cid,  int type);
 int TAPI_VOICE_DropCurrentCall (unsigned char cid);
-int TAPI_VOICE_AnswerCall (unsigned char cid,  int type); 
-int TAPI_VOICE_HoldCall (unsigned char cid); 
+int TAPI_VOICE_AnswerCall (unsigned char cid,  int type);
+int TAPI_VOICE_HoldCall (unsigned char cid);
 int TAPI_VOICE_JoinCall (
     unsigned char cid,
     unsigned char cid);
@@ -102,29 +115,29 @@ int TAPI_VOICE_TransferCall (
     unsigned char num[42],
     unsigned char* newCid);
 int TAPI_VOICE_DropAllCall(void);
-      
+
 
 
 // net
 int TAPI_NETWORK_GetServiceProviderName( SP_NAME* name);
 int TAPI_NETWORK_GetCurrentNetworkId(
        signed char mcc[4],
-       signed char mnc[4] ); 
-// pin 
-int TAPI_SECURITY_GetPin1Status( 
+       signed char mnc[4] );
+// pin
+int TAPI_SECURITY_GetPin1Status(
     const unsigned char type, unsigned char* status);
 
 int TAPI_SECURITY_SetPin1Status(
     const signed char pass[21],
-    const unsigned char   mode); 
+    const unsigned char   mode);
 // acce
 int TAPI_ACCE_GetSiginalQuality(SQ* quality);
 
-// ussd 
+// ussd
 int TAPI_USSD_MakeRequest ( USSD_REQUEST* msg);
 
 // phonebook
-int TAPI_PHONEBOOK_GetEntryList ( 
+int TAPI_PHONEBOOK_GetEntryList (
     unsigned short int start,
     unsigned short int end,
     PHONEBOOK_ENTRY* book );
@@ -135,6 +148,9 @@ int TAPI_ACCE_GetImsi(unsigned char id[16]);
 // rf 0 - on , 1 - w
 int TAPI_ACCE_SetRfMode(int rf);
 int TAPI_ACCE_GetRfMode(int* rf);
+
+// SMS
+int TAPI_SMS_SendPduUnblockMode(const SMS_PDU* pdu, unsigned int* seq_num);
 }
 
 

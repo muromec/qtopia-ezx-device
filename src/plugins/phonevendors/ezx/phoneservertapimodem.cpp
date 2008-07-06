@@ -21,10 +21,10 @@
 
 /*
 *
-* TODO: 
+* TODO:
 * - rename classes and add hook to phoneserver.cp... done
 * - move from this file and revert original dummy modem... done
-* - split file 
+* - split file
 *
 */
 
@@ -37,6 +37,7 @@
 #include "qsiminfotapi.h"
 #include "qsupplementaryservicestapi.h"
 #include "qtelephonyservicetapi.h"
+#include "qsmssendertapi.h"
 #include "ezxvibrateaccessory.h"
 
 #include <qvaluespace.h>
@@ -54,7 +55,7 @@
 
 signed int   asyncFd = -1;
 int phoneFd;
-unsigned short int msgId[] = { 0x200,0x700,0x800,0xa00,0xe00,0x0D00 };
+unsigned short int msgId[] = { 0x200,0x300,0x30a,0x700,0x800,0xa00,0xe00,0x0D00 };
 
 // call id mapping. tapi id - array index, qtopia id - value
 static QString idconv[256];
@@ -83,7 +84,7 @@ unsigned char QPhoneCallTapi::get_cid(void)
 {
   for (int i=0; i<255; i++)
     {
-      if  (idconv[i] == identifier()) 
+      if  (idconv[i] == identifier())
         return i;
 
     }
@@ -111,7 +112,7 @@ void QPhoneCallTapi::dial( const QDialOptions& options )
     // ask tapi for kall
     result_id = TAPI_VOICE_MakeCall( phoneNum, &callId );
 
-    // save qtopia edent 
+    // save qtopia edent
     idconv[callId] = identifier();
 
 
@@ -143,7 +144,7 @@ void QPhoneCallTapi::hangup( QPhoneCall::Scope )
       default:
         // ask tapi to drop call
         TAPI_VOICE_DropCurrentCall ( callId );
-        
+
     }
     // tell qtopia.
     // TODO: tapi return value?
@@ -152,16 +153,16 @@ void QPhoneCallTapi::hangup( QPhoneCall::Scope )
 
 void QPhoneCallTapi::accept()
 {
-    // accept incoming call 
-    // call tapi id 
+    // accept incoming call
+    // call tapi id
     unsigned char      callId;
-    
+
     // qtopia call indent set by tapi_fd() is short
     callId = atoi(identifier().toAscii().constData());
     idconv[callId] = identifier().toAscii().constData();
 
     // tell tapi to accept.
-    // dont tell qtopia here - it whill be done in tapi_fd() 
+    // dont tell qtopia here - it whill be done in tapi_fd()
     // connect event
     TAPI_VOICE_AnswerCall( callId, 0 );
 
@@ -195,13 +196,13 @@ void QPhoneCallTapi::tone( const QString& qtone)
 
 void QPhoneCallTapi::transfer( const QString& num )
 {
-  unsigned char newCallId; 
+  unsigned char newCallId;
   unsigned char phoneNum[42];
 
   // copy qtopia num to tapi num
   strcpy(
-      (char *)(phoneNum), 
-      (char *)num.toAscii().constData()  
+      (char *)(phoneNum),
+      (char *)num.toAscii().constData()
   );
 
   TAPI_VOICE_TransferCall(get_cid(), phoneNum, &newCallId);
@@ -235,7 +236,7 @@ QTelephonyServiceTapi::QTelephonyServiceTapi
 
     // connect to tapisrv
     asyncFd = TAPI_CLIENT_Init(  msgId, sizeof(msgId) / 2 );
-    if (asyncFd < 1) 
+    if (asyncFd < 1)
       printf ("ERROR: cannot connect to tapi! Fix your setup!\n");
 
     // cleanup
@@ -254,17 +255,17 @@ QTelephonyServiceTapi::~QTelephonyServiceTapi()
 {
 }
 void QTelephonyServiceTapi::SignalStrengthUpdate() {
-    
+
     SQ sq;
     int ss;
-    
+
     // ask tapi
     TAPI_ACCE_GetSiginalQuality( &sq );
 
     QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
     printf("rssi: %d, %d\n",sq.rssi, (sq.rssi *  100 / 31));
     // rssi - 0-31, 99 - unknown
-    if ((sq.rssi == 99) or (sq.rssi == 100) ){ // singan level unknown 
+    if ((sq.rssi == 99) or (sq.rssi == 100) ){ // singan level unknown
       ss = -1;
       prov->setAvailability( QSignalSource::NotAvailable ); // ??
     } else {
@@ -286,11 +287,11 @@ void QTelephonyServiceTapi::voice_state(VOICE_CALL_STATUS *tapi_call) {
 
     char id[200]; // for qtopia call id
     sprintf(id,"%d",tapi_call->cid); // copy tapi id (short) to qtopia id (long)
-    QPhoneCallImpl *call; 
+    QPhoneCallImpl *call;
 
     switch ( (signed int)tapi_call->status )
-    {   
-        /* 
+    {
+        /*
          * tapi voice call connected. setting qtopia state
          */
         case 0:
@@ -306,17 +307,17 @@ void QTelephonyServiceTapi::voice_state(VOICE_CALL_STATUS *tapi_call) {
 
 
             break;
-        
+
         /*
-         * tapi voice call disconnected. 
+         * tapi voice call disconnected.
          */
         case 1:
             printf ("DISCONNECT.\n");
-            
+
             /* try to find call by id */
             call = callProvider()->findCall( idconv[tapi_call->cid] ) ;
 
-            if (call) // if found.. 
+            if (call) // if found..
             {
              printf("state: %d\n",call->state());
 
@@ -340,9 +341,9 @@ void QTelephonyServiceTapi::voice_state(VOICE_CALL_STATUS *tapi_call) {
           break;
 
         default:
-          printf ("unhandled voice call status change: %d\n", 
+          printf ("unhandled voice call status change: %d\n",
               (signed int)tapi_call->status );
-        
+
     }
 
 }
@@ -361,18 +362,18 @@ void QTelephonyServiceTapi::incoming(VOICE_CALL_INFO *tapi_call){
      idconv[tapi_call->cid] = QString(id);
 
      // if call with tapi id not found qtopia pool - add
-     if ( !callProvider()->findCall(id)) 
+     if ( !callProvider()->findCall(id))
      {
        QPhoneCallTapi * call = new QPhoneCallTapi(callProvider(),id,"Voice");
        call->setNumber( (char *) tapi_call->phone );
        call->setState (QPhoneCall::Incoming);
-     } 
+     }
 }
 /*
  *  signal quality update
  */
 void QTelephonyServiceTapi::signal_quality(int quality){
-      
+
       QSignalSourceProvider* prov = new QSignalSourceProvider( QLatin1String("modem"),  QLatin1String("modem"), this );
 
       // set qtopia level 0-100
@@ -385,14 +386,14 @@ void QTelephonyServiceTapi::signal_quality(int quality){
         prov->setAvailability( QSignalSource::NotAvailable );
 
 }
-/* 
+/*
  *  ussd response
  */
 void QTelephonyServiceTapi::ussd_response(USSD_RESPONSE *ussd){
     unsigned char  text[364];
     memset(( char*)text,0,ussd->len);
 
-    // invert 
+    // invert
     for(int i=0; i<sizeof(ussd->text); (i = i+2))
     {
         text[i]   = ussd->text[i+1];
@@ -401,11 +402,11 @@ void QTelephonyServiceTapi::ussd_response(USSD_RESPONSE *ussd){
 
     // only type==0
     if (! ussd->type)
-      supp->cusd( 
+      supp->cusd(
           QString::fromUtf16(
             (unsigned short int *)text,
             ussd->len/2
-          )   
+          )
       );
 
 }
@@ -417,7 +418,7 @@ void QTelephonyServiceTapi::ussd_response(USSD_RESPONSE *ussd){
 void QTelephonyServiceTapi::tapi_fd(int n)
 {
 
-	    
+
       // get tapi message from socket fd
       TAPI_MSG  tapi_msg;
       memset( &tapi_msg, 0, sizeof(TAPI_MSG) );
@@ -431,19 +432,20 @@ void QTelephonyServiceTapi::tapi_fd(int n)
       {
         case 0x201: voice_state( (VOICE_CALL_STATUS*)tapi_msg.body ); break;
         case 0x202: incoming(    (VOICE_CALL_INFO*)  tapi_msg.body ); break;
+        case 0x30a: sms_sender->sendResponse((SMS_SEND_RESP *)tapi_msg.body ); break;
         case 0x701: signal_quality(*((int*)          tapi_msg.body)); break;
         case 0x702: printf("sa: %d\n",(int) *tapi_msg.body); break; //  NOP?
         case 0x703: printf("r : %d\n",(int) *tapi_msg.body); break; // QTelephony::RegistrationHome / QTelephony::RegistrationRoaming
         case 0x706: printf("searching\n"); break; // QTelephony::RegistrationSearching
         case 0x70a: printf("registered\n"); break; // set opname
         case 0x70c: printf("deregistered\n");break; // QTelephony::RegistrationNone
-        
+
         case 0x804: printf("grps: %d\n",(int) *tapi_msg.body); break;
         case 0x80b: printf("egprs: %d\n",(int) *tapi_msg.body); break;
 
         // 0x702 - service availability
         // 0x703 - roaming status
-        // 0x706 - searching 
+        // 0x706 - searching
         // 0x70a - registered
         // 0x70c - deregistered
 
@@ -454,7 +456,7 @@ void QTelephonyServiceTapi::tapi_fd(int n)
         default: printf ("tapi %x body: %x\n" , (int)tapi_msg.id, tapi_msg.body) ;
       }
 
-  
+
 
 }
 void QTelephonyServiceTapi::initialize()
@@ -480,14 +482,18 @@ void QTelephonyServiceTapi::initialize()
 
     if ( !callProvider() )
         setCallProvider( new QPhoneCallProviderTapi( service(), this ) );
-    
+
     if ( !supports<QVibrateAccessory>() )
         addInterface( new EZXVibrateAccessory( this ) );
 
-    if ( !supports<QSupplementaryServices>() ) 
+    if ( !supports<QSupplementaryServices>() )
     {
               supp = new QSupplementaryServicesTapi( this );
               addInterface( supp );
+    }
+    if ( !supports<QSMSSender>() )
+    {
+        addInterface(sms_sender = new QSMSSenderTapi( service(), this ) );
     }
 
 
@@ -495,7 +501,7 @@ void QTelephonyServiceTapi::initialize()
     EzxBattery* bat;
     bat = new EzxBattery ( this  );
 
-    
+
 
     QTelephonyService::initialize();
 }
