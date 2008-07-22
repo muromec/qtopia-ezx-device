@@ -1,1 +1,0 @@
-qtopia_project(subdirs)
