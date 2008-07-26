@@ -97,6 +97,10 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         mux2->close();
         mux3->close();
         mux4->close();
+        mux5->close();
+        mux6->close();
+        mux7->close();
+        mux8->close();
 
         return mux;
 }
