@@ -48,7 +48,7 @@
 #define VTRELSIG SIGUSR2
 
 static int vtQws = 0;
-static bool                    isPressed;
+static bool                    isPressed,isRepeated;
 
 EZXKbdHandler::EZXKbdHandler()
 {
@@ -176,8 +176,18 @@ void EZXKbdHandler::readKbdData()
         switch (driverKeyCode)
         {
             // control data
-            case 0x80: isPressed = 1; break;
-            case 0:    isPressed = 0; break;
+            case 0x80: 
+              if(isPressed == 1)
+                isRepeated = 1;
+
+              isPressed = 1; 
+              return;
+              break;
+            case 0:    
+              isPressed = 0; 
+              isRepeated =0;
+              return;
+              break;
 
             
             // Navigation+
@@ -207,14 +217,14 @@ void EZXKbdHandler::readKbdData()
 
         }
 
-        qLog(Input) << "processKeyEvent(): key=" << qtKeyCode << ", unicode=" << unicode;
 
         processKeyEvent(unicode, qtKeyCode, modifiers, isPressed, false);
 
-        if (isPressed)
+        if (isRepeated)
             beginAutoRepeat(unicode, qtKeyCode, modifiers);
         else
             endAutoRepeat();
+
 
     }
 }
