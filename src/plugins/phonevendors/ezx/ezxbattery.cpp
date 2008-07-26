@@ -35,39 +35,6 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 
-static inline void set_usb_mode(int mode)
-{
-
-    int usbc = open("/dev/motusbd", O_RDWR);
-    ioctl(usbc,MOTUSBD_IOCTL_SET_USBMODE,&mode);
-    close(usbc);
-
-}
-
-static inline void set_charge_mode(int fd, int mode)
-{
-
-    ioctl (fd, POWER_IC_IOCTL_CHARGER_SET_CHARGE_CURRENT, mode); 
-
-}
-
-
-// move this to header
-typedef struct 
-{
-  int time;
-  int timeout;
-  int direction;
-  int bat;
-  int cur;
-} BAT_INFO;
-
-typedef struct
-{
-  int channel;
-  int result;
-} CHANNEL_REQUEST;
-
 
 EzxBattery::EzxBattery(QObject *parent)
 : QObject(parent)
@@ -90,120 +57,42 @@ void EzxBattery::updateMotStatus()
 {
 
 
-    // TODO: 
-    // * check if battery connected
-    // * check charging status, not connected cables
-    // * replace emud? 
-
-    BAT_INFO info;
+    POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
     
-    int power,accy,ret;
-    unsigned long int devs;
+    int power,ret;
     bool chargerState = false;
-
-    unsigned char batteryVoltage = 0;
-    signed short int batteryCurrent = 0;
 
     
     // battery info
+    info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
     power = open("/dev/power_ic",O_RDWR);
-    info.time = 0;
     ret = ioctl (power,POWER_IC_IOCTL_ATOD_BATT_AND_CURR,&info);
+    close(power);
 
-    batteryVoltage = info.bat >> 2;
-    batteryCurrent = info.cur;
     
     // FIXME
-    battery->setCharge( (int) ((info.bat - 310) / 4)  );
+    battery->setCharge( (int) ((info.batt_result - 310) / 4)  );
 
-    // get attached cables list
-    accy = open("/dev/accy", O_RDWR);  
-    ioctl(accy, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &devs);
+    
 
-    // if no cable connected - no charging
-
-    // need to uninitialise usb and charging
-    if (devs == 0)  {
-      if (charging) { 
-        set_charge_mode(power,0);
-        charging = false;
-      }
-      if (usb) {
-        set_usb_mode(0);
-        usb = false;
-      }
-      chargerState = false;
-    }
-
-
-    while (devs){
-        ret = generic_ffs((devs)) - 1;
-
-
-        switch (ret) {
-          case 1:
-            printf("charger error!\n");
-            break;
-
-          // charger attached
-          case 3:  
-            chargerState = true;
-            if  (info.bat < 710) {
-
-              if (! charging ) {
-
-                set_charge_mode(power,13);
-                charging = true;
-              }
-            } else {
-                set_charge_mode(power,0);
-                charging = false;
-            }
-
-            break;
-
-          case 11:
-            // set mode to usbnet
-            if (! usb ) {
-              set_usb_mode(1) ; // FIXME: usbnet hardcoded
-              usb = true;
-            }
-            break;
-          default:
-
-            if (usb) {
-              set_usb_mode(0);
-              usb = false;
-            }
-
-            if (charging) {
-
-              set_charge_mode(power,0);
-              charging = false;
-            }
-            chargerState = false;
-
-        }
-
-        devs &= ~(1 << (ret));
-    }
-
+    // FIXME
+    chargerState = ( !access("/tmp/charging",F_OK) );
 
     // with no battary it whill be 1
-    if (info.bat == 1)
+    if (info.batt_result == 1)
        battery->setAvailability(QPowerSource::NotAvailable);
     else
        battery->setAvailability(QPowerSource::Available); 
 
+    // FIXME
     if (chargerState) 
             charger->setAvailability(QPowerSource::Available);
     else
             charger->setAvailability(QPowerSource::Failed);
 
-    battery->setCharging(charging);
+    battery->setCharging(chargerState );
+
     
-    close(power);
-    close(accy);
 
 
 }
