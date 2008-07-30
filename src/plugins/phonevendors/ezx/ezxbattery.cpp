@@ -34,6 +34,7 @@
 #include <linux/ezxusbd.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <signal.h>
 
 
 EzxBattery::EzxBattery(QObject *parent)
@@ -50,28 +51,49 @@ EzxBattery::EzxBattery(QObject *parent)
     battery = new QPowerSourceProvider(QPowerSource::Battery, "DefaultBattery", this);
     charging = false;
     usb = false;
+
+    motodPidUpdate();
+
 }
 
-
+void EzxBattery::motodPidUpdate(){
+    int fd = open("/var/run/motod.pid",O_RDONLY);
+    char cpid[11];
+    read(fd,&cpid,11);
+    close(fd);
+    motod_pid = atoi(cpid);
+}
 void EzxBattery::updateMotStatus()
 {
 
 
     POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
     
-    int power,ret;
+    int power;
     bool chargerState = false;
 
     
-    // battery info
-    info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
-    power = open("/dev/power_ic",O_RDWR);
-    ret = ioctl (power,POWER_IC_IOCTL_ATOD_BATT_AND_CURR,&info);
+    int batt_result;
+    char cbatt_result[4];
+
+
+    if (kill(motod_pid,SIGUSR1) == -1) {
+      motodPidUpdate();
+      kill(motod_pid,SIGUSR1) ;
+    } 
+
+    power = open("/tmp/battery",O_RDONLY);
+    read(power,&cbatt_result,4);
     close(power);
+    
+    batt_result = atoi(cbatt_result);
+
+
+
 
     
     // FIXME
-    battery->setCharge( (int) ((info.batt_result - 310) / 4)  );
+    battery->setCharge( (int) batt_result );
 
     
 
