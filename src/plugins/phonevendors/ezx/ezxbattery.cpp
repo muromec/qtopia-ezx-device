@@ -12,7 +12,7 @@
 ** Contact info@trolltech.com if any conditions of this licensing are
 ** not clear to you.
 **
-** 
+**
 **
 ** This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 ** WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
@@ -56,46 +56,46 @@ EzxBattery::EzxBattery(QObject *parent)
 
 }
 
-void EzxBattery::motodPidUpdate(){
+void EzxBattery::motodPidUpdate()
+{
     int fd = open("/var/run/motod.pid",O_RDONLY);
     char cpid[11];
     read(fd,&cpid,11);
     close(fd);
     motod_pid = atoi(cpid);
 }
+
 void EzxBattery::updateMotStatus()
 {
-
-
     POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
-    
-    int power;
+
+    //int power;
     bool chargerState = false;
 
-    
-    int batt_result;
-    char cbatt_result[4];
-
+    int batt_result = 0;
+    //char cbatt_result[16];
 
     if (kill(motod_pid,SIGUSR1) == -1) {
       motodPidUpdate();
       kill(motod_pid,SIGUSR1) ;
-    } 
+    }
 
+    /*
     power = open("/tmp/battery",O_RDONLY);
-    read(power,&cbatt_result,4);
+    read(power,&cbatt_result,16);
     close(power);
-    
-    batt_result = atoi(cbatt_result);
+    */
+    FILE *bf = fopen("/tmp/battery", "r");
+    if (bf)
+    {
+      fscanf(bf, "%d", &batt_result);
+      fclose(bf);
+    }
 
+    //batt_result = atoi(cbatt_result);
 
-
-
-    
     // FIXME
     battery->setCharge( (int) batt_result );
-
-    
 
     // FIXME
     chargerState = ( !access("/tmp/charging",F_OK) );
@@ -104,19 +104,15 @@ void EzxBattery::updateMotStatus()
     if (info.batt_result == 1)
        battery->setAvailability(QPowerSource::NotAvailable);
     else
-       battery->setAvailability(QPowerSource::Available); 
+       battery->setAvailability(QPowerSource::Available);
 
     // FIXME
-    if (chargerState) 
+    if (chargerState)
             charger->setAvailability(QPowerSource::Available);
     else
             charger->setAvailability(QPowerSource::Failed);
 
     battery->setCharging(chargerState );
-
-    
-
-
 }
 
 

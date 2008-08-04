@@ -44,11 +44,11 @@ private:
     QSocketNotifier *powerNotify;
     bool charging;
     bool usb;
-
 private Q_SLOTS:
-    
     void updateMotStatus();
-    
+private:
+    void motodPidUpdate();
+    int motod_pid;
 };
 
 #endif // _EZXBATTERY_H_
