@@ -48,7 +48,6 @@
 #define VTRELSIG SIGUSR2
 
 static int vtQws = 0;
-static bool                    isPressed,isRepeated;
 
 EZXKbdHandler::EZXKbdHandler()
 {
@@ -159,74 +158,49 @@ void EZXKbdHandler::readKbdData()
      * Flip:
      * 1b: flip
     */
-    unsigned char           buf[80];
-    unsigned short          driverKeyCode;
-    unsigned short          unicode;
+    unsigned char           buf[2];
     unsigned int            qtKeyCode;
     Qt::KeyboardModifiers   modifiers = Qt::NoModifier;
 
-    int n = ::read(kbdFD, buf, 80);
+    int n = ::read(kbdFD, buf, 2);
 
-    for (int loop = 0; loop < n; loop++)
+    unsigned short driverKeyCode   = (unsigned short)buf[0];
+    unsigned short controlCode     = (unsigned short)buf[1];
+    unsigned short unicode         = 0xffff;
+
+    switch (driverKeyCode)
     {
-        driverKeyCode   = (unsigned short)buf[loop];
-        qtKeyCode       = 0;
-        unicode         = 0xffff;
+        
+        // Navigation+
+        case 0x1c: qtKeyCode = Qt::Key_Call; break;
+        case 0x1e: qtKeyCode = Qt::Key_Hangup; break;
 
-        switch (driverKeyCode)
-        {
-            // control data
-            case 0x80: 
-              if(isPressed == 1)
-                isRepeated = 1;
+        case 0x0c: qtKeyCode = Qt::Key_Up; break;
+        case 0x0d: qtKeyCode = Qt::Key_Down; break;
+        case 0x0e: qtKeyCode = Qt::Key_Left; break;
+        case 0x0f: qtKeyCode = Qt::Key_Right; break;
+        case 0x10: qtKeyCode = Qt::Key_Select; break;
 
-              isPressed = 1; 
-              return;
-              break;
-            case 0:    
-              isPressed = 0; 
-              isRepeated =0;
-              return;
-              break;
+        // Keys on left hand side of device
+        case 0x25: qtKeyCode = Qt::Key_VolumeUp; break;
+        case 0x26: qtKeyCode = Qt::Key_VolumeDown; break;
+        case 0x27: qtKeyCode = Qt::Key_Select; break;
 
-            
-            // Navigation+
-            case 0x1c: qtKeyCode = Qt::Key_Call; break;
-            case 0x1e: qtKeyCode = Qt::Key_Hangup; break;
+        // Keys on right hand side of device
+        case 0x19: qtKeyCode = Qt::Key_F4; break;
+        case 0x20: qtKeyCode = Qt::Key_F7; break;   // Key +
 
-            case 0x0c: qtKeyCode = Qt::Key_Up; break;
-            case 0x0d: qtKeyCode = Qt::Key_Down; break;
-            case 0x0e: qtKeyCode = Qt::Key_Left; break;
-            case 0x0f: qtKeyCode = Qt::Key_Right; break;
-            case 0x10: qtKeyCode = Qt::Key_Select; break;
+        // flip
+        case 0x1b: qtKeyCode = Qt::Key_Flip; break;
 
-            // Keys on left hand side of device
-            case 0x25: qtKeyCode = Qt::Key_VolumeUp; break;
-            case 0x26: qtKeyCode = Qt::Key_VolumeDown; break;
-            case 0x27: qtKeyCode = Qt::Key_Select; break;
-
-            // Keys on right hand side of device
-            case 0x19: qtKeyCode = Qt::Key_F4; break;
-            case 0x20: qtKeyCode = Qt::Key_F7; break;   // Key +
-
-            // flip
-            case 0x1b: qtKeyCode = Qt::Key_Flip; break;
-
-            // unknown
-            default: printf("unknown key: %x, press: %d\n",driverKeyCode, isPressed);
-
-        }
-
-
-        processKeyEvent(unicode, qtKeyCode, modifiers, isPressed, false);
-
-        if (isRepeated)
-            beginAutoRepeat(unicode, qtKeyCode, modifiers);
-        else
-            endAutoRepeat();
-
+        // unknown
+        default: printf("unknown key: %x, control: %d\n",driverKeyCode, controlCode);
 
     }
+
+    processKeyEvent(unicode, qtKeyCode, modifiers, controlCode, false);
+
+
 }
 
 
