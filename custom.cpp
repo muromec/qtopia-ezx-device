@@ -34,32 +34,29 @@ QTOPIABASE_EXPORT void qpe_setBrightness(int b)
   // TODO: notify apmd
   int fbh;
   int ret;
+  printf("brightness : %d\n",b);
   fbh = open(FRAMEBUFFER_DEVICE, O_RDWR);
 
   if (b > 100)
     b = 100;
 
-  if (b > 1) {
+  if (b) {
 
     if (! fb_disp_on ) {
       ret = ioctl(fbh, FBIOBLANK, VESA_NO_BLANKING);
-      printf("FBIOBLANK %d %d\n", ret, VESA_NO_BLANKING);
       ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_ON);
-      printf("FBIOSETBKLIGHT %d\n",ret);
 
       fb_disp_on = true;
     }
     ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
   } else {
+    printf("lcd off\n");
     // power down lcd to save power
     ret = ioctl(fbh, FBIOSETBRIGHTNESS, 0); 
-    printf("FBIOSETBRIGHTNESS-0 %d\n",ret);
 
     ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_OFF);
-    printf("FBIOSETBKLIGHT ret: %d, %d\n", ret, BKLIGHT_OFF);
 
     ret = ioctl(fbh, FBIOBLANK, VESA_POWERDOWN);
-    printf("FBIOBLANK ret: %d, %d\n", ret, VESA_POWERDOWN);
     fb_disp_on = false;
   }
 
