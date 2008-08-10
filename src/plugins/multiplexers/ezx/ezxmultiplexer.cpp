@@ -24,6 +24,7 @@
 #include "QSerialPort"
 
 #include "qdatetime.h"
+#include "stdio.h"
 
 // dummy multyplexer for tapi bridge
 
@@ -55,13 +56,13 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         QMultiPortMultiplexer *mux = new QMultiPortMultiplexer( device );
 
         // Add the secondary channel.
-        QSerialPort *secondary = QSerialPort::create( "/dev/mux1" );
-        mux->addChannel( "secondary", secondary );
+        QSerialPort *secondaryMux = QSerialPort::create( "/dev/mux1" );
+        mux->addChannel( "secondary", secondaryMux );
 
         // FIXME use QList
         // open all ports to pass handshake
-        QSerialPort *mux2 = QSerialPort::create( "/dev/mux2" );
-        mux->addChannel( "mux2", mux2 );
+        QSerialPort *smsMux = QSerialPort::create( "/dev/mux2" );
+        mux->addChannel( "sms", smsMux );
 
         QSerialPort *mux3 = QSerialPort::create( "/dev/mux3" );
         mux->addChannel( "mux3", mux3 );
@@ -87,14 +88,14 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         // set bp time from ap
         QDateTime now = QDateTime::currentDateTime();
 
-        mux->chat(device,now.toString("AT+CCLK=\"%yy/%MM/%dd,%hh:%mm:%ss\"") );
+        mux->chat(device,"AT+CCLK=\"" + now.toString("yy/MM/dd,hh:mm:ss") + "\"" );
 
         // ??
         mux->chat(device,"AT+EAPF=12,1,0" );
         mux->chat(device,"AT");
 
         // close unused lines
-        mux2->close();
+        //mux2->close();
         mux3->close();
         mux4->close();
         mux5->close();

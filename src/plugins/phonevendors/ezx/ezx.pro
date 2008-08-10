@@ -9,14 +9,18 @@ HEADERS		=  ezxplugin.h   ezxbattery.h   ezxmodemservice.h \
   ezxmodemnetworkregistration.h \
   ezxmodemsiminfo.h \
   ezxmodemsupplementaryservices.h \
-  ezxmodemsmssender.h
+  ezxmodemsmssender.h \
+  ezxmodemsmsreader.h
+
 SOURCES	        =  ezxplugin.cpp ezxbattery.cpp ezxmodemservice.cpp \
   ezxvibrateaccessory.cpp \
   ezxmodempinmanager.cpp \
   ezxmodemnetworkregistration.cpp \
   ezxmodemsiminfo.cpp \
   ezxmodemsupplementaryservices.cpp \
-  ezxmodemsmssender.cpp
+  ezxmodemsmssender.cpp \
+  ezxmodemsmsreader.cpp
+
 
 
 depends(libraries/qtopiaphonemodem)
