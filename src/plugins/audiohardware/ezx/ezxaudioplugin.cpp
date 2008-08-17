@@ -340,8 +340,6 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
         // find /dev/dsp file descriptor
         dspfd =  dsp_fd() ;
 
-        printf("dsp fd: %d\n",dspfd);
-
         // if dsp opened
         if (dspfd > 0) {
 
@@ -360,12 +358,6 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
         // open bp link
         phonefd = open("/dev/phone",O_RDONLY);
 
-        printf("old dsp fd: %d, new dsp fd: %d, phonefd: %d\n",
-            dspfd,
-            dsp_fd(),
-            phonefd
-        );
-
         return set_audio_mode(2);
         
     } 
@@ -377,7 +369,6 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 
 bool SpeakerAudioState::leave()
 {
-    printf("SpeakerAudioState::leave, m_isPhone: %d\n",m_isPhone); 
     if (m_isPhone)  {
       // close phonefd
       if (phonefd > 0)
@@ -385,14 +376,11 @@ bool SpeakerAudioState::leave()
 
       // reopen dsp
       if (dspNULL) {
-        printf("reopening back...\n");
         freopen ("/dev/dsp","w",dspFILE);
         dspNULL = false;
       }
 
     }
-
-
     return true;
 }
 
@@ -505,11 +493,19 @@ public:
 
 private:
     QAudioStateInfo m_info;
+    int phonefd;
+    int dspfd;
+    FILE* dspFILE;
+    bool dspNULL;
+
 };
 
 SpeakerphoneAudioState::SpeakerphoneAudioState(QObject *parent)
     : QAudioState(parent)
 {
+    phonefd = -1;
+    dspNULL = false;
+
     m_info.setDomain("Phone");
     m_info.setProfile("PhoneSpeakerphone");
     m_info.setDisplayName(tr("Speakerphone"));
@@ -534,12 +530,45 @@ bool SpeakerphoneAudioState::isAvailable() const
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
     printf("SpeakerphoneAudioState::enter capability %d\n", capability         );
+    
+    // find /dev/dsp file descriptor
+    dspfd =  dsp_fd() ;
+
+
+    // if dsp opened
+    if (dspfd > 0) {
+
+      // get FILE
+      dspFILE = fdopen(dspfd,"w");
+
+      // reopen to null
+      freopen ("/dev/null","w",dspFILE);
+
+      // set flag
+      dspNULL = true;
+    }
+
+    // open bp link
+    phonefd = open("/dev/phone",O_RDONLY);
+
+    return set_audio_mode(1);
+
     return true;
 }
 
 bool SpeakerphoneAudioState::leave()
 {
       printf("SpeakerphoneAudioState::leave \n" );
+      
+      if (phonefd > 0)
+        close(phonefd)          ;
+
+      // reopen dsp
+      if (dspNULL) {
+        printf("reopening back...\n");
+        freopen ("/dev/dsp","w",dspFILE);
+        dspNULL = false;
+      }
 
       return true;
 }
@@ -622,6 +651,7 @@ EZXAudioPlugin::EZXAudioPlugin(QObject *parent)
 #endif
 
     m_data->m_states.push_back(new SpeakerphoneAudioState(this));
+
     m_data->m_states.push_back(new RingtoneAudioState(this));
 
     //TODO: Need to enable Bluetooth RingTone
