@@ -193,6 +193,8 @@ void EZXKbdHandler::readKbdData()
         // flip
         case 0x1b: qtKeyCode = Qt::Key_Flip; break;
 
+        case 0x29: qtKeyCode = Qt::Key_F28; break;
+
         // unknown
         default: printf("unknown key: %x, control: %d\n",driverKeyCode, controlCode);
 
