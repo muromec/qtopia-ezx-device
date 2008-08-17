@@ -80,6 +80,15 @@ void EzxModemService::init( QSerialIODeviceMultiplexer *mux )
                                this, SLOT(suspend()) );
     QtopiaIpcAdaptor::connect( suspend, MESSAGE(wake()),
                                this, SLOT(wake()) );
+
+    primaryAtChat()->chat( "ATE1" );
+    secondaryAtChat()->chat( "ATE1" );
+    smsAtChat()->chat( "ATE1" );
+
+    primaryAtChat()->setRetryOnNonEcho( 30000 );
+    secondaryAtChat()->setRetryOnNonEcho( 30000 );
+    smsAtChat()->setRetryOnNonEcho( 30000 );
+
 }
 
 QAtChat *EzxModemService::smsAtChat() const
