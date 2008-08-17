@@ -26,7 +26,6 @@
 #include <qatresult.h>
 #include <qatresultparser.h>
 
-#include <stdio.h>
 /*!
     \class EzxModemNetworkRegistration
     \mainclass
@@ -65,7 +64,6 @@ EzxModemNetworkRegistration::EzxModemNetworkRegistration( QModemService *service
     : QModemNetworkRegistration( service )
 {
 
-    printf("construct\n");
     d = new EzxModemNetworkRegistrationPrivate( service );
     service->primaryAtChat()->registerNotificationType
         ( "+CREG:", this, SLOT(cregNotify(QString)), true );
@@ -87,7 +85,6 @@ EzxModemNetworkRegistration::~EzxModemNetworkRegistration()
 
 void EzxModemNetworkRegistration::copsDone( bool, const QAtResult& result )
 {
-    printf("-> copsDone %s\n",d->operatorName.toAscii().constData());
     QAtResultParser parser( result );
     parser.next( "+COPS:" );
     uint mode = parser.readNumeric();
@@ -105,13 +102,11 @@ void EzxModemNetworkRegistration::copsDone( bool, const QAtResult& result )
     }
     
     updateCurrentOperator( mmode,id,d->operatorName, "GSM" );
-    printf("<-copsDone %s\n",d->operatorName.toAscii().constData());
 
 }
 
 void EzxModemNetworkRegistration::espnDone( bool, const QAtResult& result )
 {
-    printf("-> espnDone %s\n", d->operatorName.toAscii().constData() );
     QAtResultParser parser( result );
     parser.next( "+ESPN:" );
     uint a = parser.readNumeric();
@@ -165,7 +160,6 @@ void EzxModemNetworkRegistration::espnDone( bool, const QAtResult& result )
     }
 
     d->operatorName = name;
-    printf("<- espnDone %s\n",name.toAscii().constData() );
 
         
 
@@ -181,11 +175,9 @@ void EzxModemNetworkRegistration::cregNotify( const QString& msg )
         // We have location information after the state value.
         updateRegistrationState( (QTelephony::RegistrationState)stat,
                                  lac.toInt( 0, 16 ), ci.toInt( 0, 16 ) );
-        printf("lac: %d, ci: %d\n",lac.toInt( 0, 16 ), ci.toInt( 0, 16 ) );
     } else {
         // We don't have any location information.
         updateRegistrationState( (QTelephony::RegistrationState)stat );
-        printf("lac or ci empty\n");
     }
 
     // Query for the operator name if home or roaming.
@@ -199,7 +191,6 @@ void EzxModemNetworkRegistration::cregNotify( const QString& msg )
 
 void EzxModemNetworkRegistration::queryCurrentOperator()
 {
-    printf("query\n");
     d->operatorName = "";
 
     d->service->secondaryAtChat()->chat
@@ -208,6 +199,4 @@ void EzxModemNetworkRegistration::queryCurrentOperator()
     d->service->secondaryAtChat()->chat( "AT+COPS=3,2" );
     d->service->secondaryAtChat()->chat
         ( "AT+COPS?", this, SLOT(copsDone(bool,QAtResult)) );
-    /*d->service->secondaryAtChat()->chat
-        ( "AT+ESPN?", this, SLOT(espnDone(bool,QAtResult)) );*/
 }

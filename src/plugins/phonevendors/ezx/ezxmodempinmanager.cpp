@@ -115,7 +115,6 @@ void EzxModemPinManager::enterPin( const QString& type, const QString& pin )
         return;
     }
     d->currentPin = pin;
-    printf("entering pin...\n" );
 
     d->service->chat( "AT+CPIN=1,\"" + QAtUtils::quote( pin ) + "\"",
                       this, SLOT(cpinResponse(bool,QAtResult)) );
@@ -133,14 +132,12 @@ void EzxModemPinManager::enterPuk
     }
 
     if ( type.contains("PUK") && d->findPending( type ) != 0 ) {
-        printf("d->findPending( type ) != 0\n");
         // We will need newPin later if the puk is verified.
         d->pendingPin = newPin;
         d->service->chat( "AT+CPIN=\"" + QAtUtils::quote( puk ) + "\",\"" +
                           QAtUtils::quote( newPin ) + "\"",
                           this, SLOT(cpukResponse(bool)) );
     } else {
-        printf("enter puk else\n");
         d->currentPin = newPin;
         d->expectedPin = type;
         d->service->chat( 
@@ -152,7 +149,6 @@ void EzxModemPinManager::enterPuk
 // Process the response to a AT+CPIN=[puk,]pin command.
 void EzxModemPinManager::cpinResponse( bool ok, const QAtResult& result )
 {
-    printf("ok: %d, cpinResponse: %s\n", ok, result.content().toAscii().constData() );
 
     d->lastSimPin = QString();
     if ( ok ) {
@@ -198,9 +194,7 @@ void EzxModemPinManager::sendQuery()
         if ( d->service->multiplexer()->channel( "primary" )->isValid() ) {
             d->service->chat
                 ( "AT+CPIN?", this, SLOT(cpinQuery(bool,QAtResult)) );
-            printf("at+cpin? sent to cpinQuery\n");
         } else {
-          printf("buggy!\n");
             // The underlying serial device could not be opened,
             // so we are not talking to a modem.  Fake sim ready.
             QAtResult result;
@@ -216,7 +210,6 @@ void EzxModemPinManager::sendQuery()
 void EzxModemPinManager::cpinQuery( bool ok, const QAtResult& result )
 {
 
-    printf("ok: %d, cpinQuery: %s\n", ok, result.content().toAscii().constData() );
     if ( !ok ) {
 
         // The AT+CPIN? request failed.  The SIM may not be ready.
@@ -233,7 +226,6 @@ void EzxModemPinManager::cpinQuery( bool ok, const QAtResult& result )
         QAtResultParser parser( result );
         parser.next( "+CPIN:" );
         QString pin = parser.line().trimmed().remove("\"");
-        printf("pin state: %s\n", pin.toAscii().constData() );
         if ( pin == "READY" || ( pin.isEmpty() && emptyPinIsReady() ) ) {
 
             // No more PIN's are required, so the sim is ready.
@@ -249,7 +241,6 @@ void EzxModemPinManager::cpinQuery( bool ok, const QAtResult& result )
             // that we know is valid.  Re-send it immediately.
             // Some modems ask for the SIM PIN multiple times.
             // 3GPP TS 27.007 requires this behaviour.
-            printf("lastpin\n");
             d->expectedPin = pin;
             d->currentPin = d->lastSimPin;
             d->service->chat( "AT+CPIN=1,\"" + d->lastSimPin  +
@@ -257,7 +248,6 @@ void EzxModemPinManager::cpinQuery( bool ok, const QAtResult& result )
 
         } else {
 
-            printf("Else\n");
             // Ask that the pin be supplied by the user.
             d->expectedPin = pin;
             QPinManager::Status status;
@@ -266,7 +256,6 @@ void EzxModemPinManager::cpinQuery( bool ok, const QAtResult& result )
             else {
                 status = QPinManager::NeedPin;
                 d->service->post( "simpinrequired" );
-                printf("needpin\n");
             }
             QPinOptions options;
             options.setMaxLength( pinMaximum() );

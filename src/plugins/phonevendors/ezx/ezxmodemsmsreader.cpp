@@ -28,7 +28,6 @@
 #include <qretryatchat.h>
 #include <qsimenvelope.h>
 
-#include "stdio.h"
 /*!
     \class EzxModemSMSReader
     \mainclass
@@ -360,7 +359,6 @@ void EzxModemSMSReader::resetModem()
 
 void EzxModemSMSReader::smsReady()
 {
-    printf("ready\n");
     if ( d->initializing ) {
         d->initializing = false;
 
@@ -375,7 +373,6 @@ void EzxModemSMSReader::smsReady()
         // Perform the initial "how many messages are there" check.
         check( true );
     }
-    printf("-ready\n");
 
 }
 
@@ -474,7 +471,6 @@ void EzxModemSMSReader::newMessageArrived()
 void EzxModemSMSReader::pduNotification
         ( const QString& type, const QByteArray& pdu )
 {
-    printf("ahahaha! sms!\n");
     if ( type.startsWith( "+CMT:" ) ) {
 
         // This is an SMS message that was delivered directly to Qtopia
@@ -501,7 +497,6 @@ void EzxModemSMSReader::pduNotification
 void EzxModemSMSReader::extractMessages( const QString& store, const QAtResult& result )
 {
     QAtResultParser cmd( result );
-    printf("extractMessages\n");
     while ( cmd.next( "+CMGL:" ) ) {
 
         // Get the message index and the PDU information.
@@ -509,7 +504,6 @@ void EzxModemSMSReader::extractMessages( const QString& store, const QAtResult& 
         uint status = cmd.readNumeric();
         QByteArray pdu = QAtUtils::fromHex( cmd.readNextLine() );
 
-        printf("sms: %d, %d\n", index,status);
         // Unpack the PDU.
         EzxSMSTaggedMessage *tmsg = new EzxSMSTaggedMessage;
         tmsg->isUnread = ( status == 0 );
@@ -552,14 +546,10 @@ void EzxModemSMSReader::cpmsDone( bool, const QAtResult& result )
         setValue( "usedMessages", (int)used, Delayed );
         setValue( "totalMessages", (int)total );
     }
-  /*indicators->setSmsMemoryFull( QModemIndicators::SmsMemoryOK ); 
-  //setValue( "usedMessages",  43, Delayed );
-  setValue( "totalMessages", 50 ); */
 }
 
 void EzxModemSMSReader::storeListDone( bool ok, const QAtResult& result )
 {
-    printf("storeListDone %d %s\n",ok, result.content().toAscii().constData() );
     // Read the messages from the response.
     QString store = messageStore();
     if ( store.isEmpty() )
@@ -603,7 +593,6 @@ void EzxModemSMSReader::storeListDone( bool ok, const QAtResult& result )
 void EzxModemSMSReader::fetchMessages()
 {
 
-    printf("fetchMessages()\n");
     // Enter fetching mode.
     d->fetching = true;
 
@@ -625,13 +614,6 @@ void EzxModemSMSReader::fetchMessages()
     // then it may have forgotten about PDU mode.
     d->service->secondaryAtChat()->chat( "AT+CMGF=0" );
     
-
-
-
-
-
-
-
     // Select the message store and request the message list.
     QString store = messageStore();
     QString cmd = messageListCommand();
@@ -649,7 +631,6 @@ void EzxModemSMSReader::fetchMessages()
 
     d->service->secondaryAtChat()->chat
         ( cmd, this, SLOT(storeListDone(bool,QAtResult)) );
-    printf("cmd: %s\n",cmd.toAscii().constData() );
 
 }
 
