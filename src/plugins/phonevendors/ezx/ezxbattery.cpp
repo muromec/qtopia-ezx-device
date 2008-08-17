@@ -28,7 +28,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "stdio.h"
 #include <linux/power_ic.h>
 #include <linux/moto_accy.h>
 #include <linux/ezxusbd.h>
@@ -47,7 +46,7 @@ EzxBattery::EzxBattery(QObject *parent)
             this,SLOT (updateMotStatus() ));
 
 
-    charger = new QPowerSourceProvider(QPowerSource::Wall, "EzxCharger", this);
+    charger = new QPowerSourceProvider(QPowerSource::Wall, "Charger", this);
     battery = new QPowerSourceProvider(QPowerSource::Battery, "DefaultBattery", this);
     charging = false;
     usb = false;
@@ -80,19 +79,12 @@ void EzxBattery::updateMotStatus()
       kill(motod_pid,SIGUSR1) ;
     }
 
-    /*
-    power = open("/tmp/battery",O_RDONLY);
-    read(power,&cbatt_result,16);
-    close(power);
-    */
     FILE *bf = fopen("/tmp/battery", "r");
     if (bf)
     {
       fscanf(bf, "%d", &batt_result);
       fclose(bf);
     }
-
-    //batt_result = atoi(cbatt_result);
 
     // FIXME
     battery->setCharge( (int) batt_result );
@@ -107,10 +99,11 @@ void EzxBattery::updateMotStatus()
        battery->setAvailability(QPowerSource::Available);
 
     // FIXME
-    if (chargerState)
+    if (chargerState || !access("/tmp/usbcable", F_OK )) 
             charger->setAvailability(QPowerSource::Available);
     else
             charger->setAvailability(QPowerSource::Failed);
+    
 
     battery->setCharging(chargerState );
 }
