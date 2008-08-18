@@ -195,6 +195,14 @@ void EZXKbdHandler::readKbdData()
 
         case 0x29: qtKeyCode = Qt::Key_F28; break;
 
+        case 0x2e: qtKeyCode = Qt::Key_F29; break;
+        
+        case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
+        case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
+        case 0x2c: qtKeyCode = Qt::Key_MediaPlay; break;
+        case 0x2a: qtKeyCode = Qt::Key_MediaPrevious; break;
+        case 0x2b: qtKeyCode = Qt::Key_MediaNext ; break;
+
         // unknown
         default: printf("unknown key: %x, control: %d\n",driverKeyCode, controlCode);
 
