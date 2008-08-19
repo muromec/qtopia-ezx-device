@@ -257,12 +257,10 @@ void EZXKbdHandler::readKbdData()
          // key sends only release event
         processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
 
-      if (repeate ) 
-        // autorepeate handled by qtopia send release event
-        processKeyEvent(unicode, qtKeyCode, modifiers, false, false);
-
-      // stop autorepeate and erase saved code
+      // stop autorepeate, send release event and erase saved code
       endAutoRepeat();
+      processKeyEvent(unicode, qtKeyCode, modifiers, false, false);
+
       lastKey = -1;
     }
 
