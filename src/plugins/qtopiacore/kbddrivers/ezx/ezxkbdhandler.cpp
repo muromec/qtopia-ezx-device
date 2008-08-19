@@ -198,10 +198,32 @@ void EZXKbdHandler::readKbdData()
         case 0x2e: qtKeyCode = Qt::Key_F29; break;
         
         case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
+        case 0x2d:
         case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
         case 0x2c: qtKeyCode = Qt::Key_MediaPlay; break;
         case 0x2a: qtKeyCode = Qt::Key_MediaPrevious; break;
         case 0x2b: qtKeyCode = Qt::Key_MediaNext ; break;
+
+        // numpad
+        case 0x00: qtKeyCode = Qt::Key_0; unicode  = 0x30; break;
+        case 0x01: qtKeyCode = Qt::Key_1; unicode  = 0x31; break;
+        case 0x02: qtKeyCode = Qt::Key_2; unicode  = 0x32; break;
+        case 0x03: qtKeyCode = Qt::Key_3; unicode  = 0x33; break;
+        case 0x04: qtKeyCode = Qt::Key_4; unicode  = 0x34; break;
+        case 0x05: qtKeyCode = Qt::Key_5; unicode  = 0x35; break;
+        case 0x06: qtKeyCode = Qt::Key_6; unicode  = 0x36; break;
+        case 0x07: qtKeyCode = Qt::Key_7; unicode  = 0x37; break;
+        case 0x08: qtKeyCode = Qt::Key_8; unicode  = 0x38; break;
+        case 0x09: qtKeyCode = Qt::Key_9; unicode  = 0x39; break;
+
+        case 0x0b: qtKeyCode = Qt::Key_Asterisk;   unicode  = 0x2A; break;
+        case 0x0a: qtKeyCode = Qt::Key_NumberSign; unicode  = 0x23; break;
+
+        case 0x13: qtKeyCode = Qt::Key_Back; break;
+        case 0x12: qtKeyCode = Qt::Key_Context1; break;
+
+        case 0x16: qtKeyCode = Qt::Key_Clear; break;
+
 
         // unknown
         default: printf("unknown key: %x, control: %d\n",driverKeyCode, controlCode);
