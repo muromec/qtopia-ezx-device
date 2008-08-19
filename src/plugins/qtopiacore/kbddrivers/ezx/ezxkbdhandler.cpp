@@ -48,6 +48,7 @@
 #define VTRELSIG SIGUSR2
 
 static int vtQws = 0;
+static unsigned int lastKey = -1;
 
 EZXKbdHandler::EZXKbdHandler()
 {
@@ -168,12 +169,15 @@ void EZXKbdHandler::readKbdData()
     unsigned short controlCode     = (unsigned short)buf[1];
     unsigned short unicode         = 0xffff;
 
+    bool repeate = false;
+    bool releaseOnly = false;
+
     switch (driverKeyCode)
     {
         
         // Navigation+
-        case 0x1c: qtKeyCode = Qt::Key_Call; break;
-        case 0x1e: qtKeyCode = Qt::Key_Hangup; break;
+        case 0x1c: qtKeyCode = Qt::Key_Call;   repeate = true; break;
+        case 0x1e: qtKeyCode = Qt::Key_Hangup; repeate = true; break;
 
         case 0x0c: qtKeyCode = Qt::Key_Up; break;
         case 0x0d: qtKeyCode = Qt::Key_Down; break;
@@ -193,7 +197,8 @@ void EZXKbdHandler::readKbdData()
         // flip
         case 0x1b: qtKeyCode = Qt::Key_Flip; break;
 
-        case 0x29: qtKeyCode = Qt::Key_F28; break;
+        // headphone 
+        case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
 
         case 0x2e: qtKeyCode = Qt::Key_F29; break;
         
@@ -226,12 +231,40 @@ void EZXKbdHandler::readKbdData()
 
 
         // unknown
-        default: printf("unknown key: %x, control: %d\n",driverKeyCode, controlCode);
+        printf("unknown key: %x control: %d\n",driverKeyCode,controlCode);
 
     }
 
-    processKeyEvent(unicode, qtKeyCode, modifiers, controlCode, false);
 
+    // key is pressed
+    if (controlCode) {
+      if (repeate) {
+        // autorepeate handled by qtopia, start it
+        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
+        beginAutoRepeat(unicode, qtKeyCode, modifiers);
+        // save keycode in variable
+        lastKey = qtKeyCode;
+      } else if  (qtKeyCode != lastKey) {
+        // autorepeate handled by kernel. press
+        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
+        lastKey = qtKeyCode;
+      } else {
+        // autorepeate handled by kernel. hold
+        processKeyEvent(unicode, qtKeyCode, modifiers, true, true);
+      }
+    } else {
+      if (releaseOnly && (qtKeyCode != lastKey) ) 
+         // key sends only release event
+        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
+
+      if (repeate ) 
+        // autorepeate handled by qtopia send release event
+        processKeyEvent(unicode, qtKeyCode, modifiers, false, false);
+
+      // stop autorepeate and erase saved code
+      endAutoRepeat();
+      lastKey = -1;
+    }
 
 }
 
