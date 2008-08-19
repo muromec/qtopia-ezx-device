@@ -40,6 +40,7 @@
 #include <sys/ioctl.h>
 
 #include "linux/soundcard.h"
+#include "linux/moto_accy.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -47,10 +48,9 @@
 #include <string.h>
 
 
-static inline bool set_audio_mode(int mode)
+static inline bool set_audio_mode(int mode, int recmode)
 {
 
-    int recmode = mode -1; // FIXME: is this correct in normal mode?
     int mixerFd = ::open("/dev/mixer", O_RDWR);
 
     if (mixerFd >= 0) {
@@ -350,7 +350,7 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 
           // reopen to null
           freopen ("/dev/null","w",dspFILE);
-
+          
           // set flag
           dspNULL = true;
         }
@@ -358,10 +358,10 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
         // open bp link
         phonefd = open("/dev/phone",O_RDONLY);
 
-        return set_audio_mode(2);
+        return set_audio_mode(EARPIECE_OUT,HANDSET_INPUT);
         
     } 
-    return set_audio_mode(1);
+    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT);
         
 
         
@@ -406,6 +406,13 @@ private:
     bool m_isPhone;
     QValueSpaceItem *m_headset;
     QtopiaIpcAdaptor *adaptor;
+    int headType;
+    
+    int phonefd;
+    int dspfd;
+    FILE* dspFILE;
+    bool dspNULL;
+
 };
 
 HeadphonesAudioState::HeadphonesAudioState(bool isPhone, QObject *parent)
@@ -445,6 +452,9 @@ QAudio::AudioCapabilities HeadphonesAudioState::capabilities() const
 void HeadphonesAudioState::onHeadsetModified()
 {
     bool avail = m_headset->value(false).toBool();
+    headType = m_headset->value(0).toInt();
+
+    printf("onHeadsetModified %d %d\n",avail,headType);
     emit availabilityChanged(avail);
 }
 
@@ -457,24 +467,95 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 {
     Q_UNUSED(capability)
 
-    //if (m_isPhone) {     }
+    if (m_isPhone) {
 
-    printf("HeadphonesAudioState::enter, m_isPhone: %d",m_isPhone);
+        // find /dev/dsp file descriptor
+        dspfd =  dsp_fd() ;
+
+        // if dsp opened
+        if (dspfd > 0) {
+
+          printf("dsp fd found. in phome mode reopening to null\n");
+
+          // get FILE
+          dspFILE = fdopen(dspfd,"w");
+
+          // reopen to null
+          freopen ("/dev/null","w",dspFILE);
+
+          // set flag
+          dspNULL = true;
+        }
+
+        // open bp link
+        phonefd = open("/dev/phone",O_RDONLY);
+    } 
+
+    int in, out;
+    printf("HeadphonesAudioState::enter, m_isPhone: %d, %d\n",m_isPhone,headType);
+    switch ( headType ) {
+
+      // 2.5 mm headset
+      case MOTO_ACCY_TYPE_HEADSET_MONO:
+        out = DIA25_MONO_HS_OUT;
+
+      case MOTO_ACCY_TYPE_HEADSET_STEREO:
+        out = DIA25_STEREO_HS_OUT;
+        in = DIA25_HEADSET_INPUT;
+        break;
+
+      // EMU (miniusb) headset
+      case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
+        out = MONO_EMUHS_OUT;
+        
+      case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
+        if (m_isPhone) 
+          out = STEREO_EMUHS_CALL_OUT;
+        else
+          out = STEREO_EMUHS_MEDIA_OUT;
+        in = EMUHS_INPUT;
+        break;
+
+      // 3.5 mm headset (E2 and E6)
+      case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
+          if (m_isPhone)
+            out = DIA35_HS_NOMIC_CALL_OUT;
+          else
+            out = DIA35_HS_NOMIC_MEDIA_OUT;
+
+      case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
+          if (m_isPhone)
+            out = DIA35_HS_MIC_CALL_OUT;
+          else
+            out = DIA35_HS_MIC_MEDIA_OUT;
+
+          in = DIA35_HS_MIC_CALL_INPUT;
+
+          break;
+    }
+    return set_audio_mode(out,in);
 
 
-    return true;
+
 }
 
 bool HeadphonesAudioState::leave()
 {
-    printf("HeadphonesAudioState::leave, m_isPhone: %d",m_isPhone);
-    if (m_isPhone) {
-        //adaptor->send(MESSAGE(setOutput(int)), 0);
-        //set_audio_mode(IOCTL_OMEGA_SOUND_RELEASE_CALL);
-    }
+    printf("HeadphonesAudioState::leave, m_isPhone: %d\n",m_isPhone);
+    
+    if (m_isPhone)  {
+      // close phonefd
+      if (phonefd > 0)
+        close(phonefd)          ;
 
+      // reopen dsp
+      if (dspNULL) {
+        freopen ("/dev/dsp","w",dspFILE);
+        dspNULL = false;
+      }
+
+    }
     return true;
-    //return set_audio_mode(IOCTL_OMEGA_SOUND_HEADPHONE_STOP);
 }
 
 class SpeakerphoneAudioState : public QAudioState
@@ -551,7 +632,7 @@ bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
     // open bp link
     phonefd = open("/dev/phone",O_RDONLY);
 
-    return set_audio_mode(1);
+    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT);
 
     return true;
 }
