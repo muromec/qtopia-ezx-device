@@ -7,6 +7,7 @@
 #include "ezxmodemsupplementaryservices.h"
 #include "ezxmodemsmsreader.h"
 #include "ezxmodemsmssender.h"
+#include "ezxmodemcallprovider.h"
 
 #include "QSerialPort"  
 #include <qslotinvoker.h>
@@ -118,6 +119,10 @@ void EzxModemService::initialize()
 
     if ( !supports<QSMSReader>() )
         addInterface( new EzxModemSMSReader( this ) );
+
+    if ( !callProvider() )
+              setCallProvider( new EzxModemCallProvider( this ) );
+
 
     EzxBattery* bat;
     bat = new EzxBattery ( this  );
