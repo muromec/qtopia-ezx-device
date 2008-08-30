@@ -5,10 +5,9 @@
 -displaysize 240x320
 -prefix /ezxlocal/Qtopia
 -launch-method quicklaunch
--font dejavu_sans_condensed:10,11,13,15,16,17,18,19,28,36:50,75
+-font DejaVuSans.ttf
 -qtopiamedia
 -mediaengines cruxus
--helix-system-id linux-2.2-libc6-arm9-cross-gcc4
 -voip
 -no-drm
 -no-sxe
