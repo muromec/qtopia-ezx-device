@@ -37,10 +37,14 @@ QTOPIABASE_EXPORT void qpe_setBrightness(int b)
   printf("brightness : %d\n",b);
   fbh = open(FRAMEBUFFER_DEVICE, O_RDWR);
 
-  if (b > 100)
-    b = 100;
 
   if (b) {
+
+    if (b > 100) // normalize
+      b = 100;
+    else if (b == 1) // dim
+      b = 11; 
+
 
     if (! fb_disp_on ) {
       ret = ioctl(fbh, FBIOBLANK, VESA_NO_BLANKING);
