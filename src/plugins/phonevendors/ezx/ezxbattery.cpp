@@ -26,14 +26,16 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <unistd.h>
 
-#include <linux/power_ic.h>
-#include <linux/moto_accy.h>
-#include <linux/ezxusbd.h>
-#include <sys/ioctl.h>
+#include <sys/socket.h> 
+#include <sys/un.h>
+
 #include <fcntl.h>
 #include <signal.h>
+
+#include <motod_ipc.h>
 
 
 EzxBattery::EzxBattery(QObject *parent)
@@ -48,64 +50,59 @@ EzxBattery::EzxBattery(QObject *parent)
 
     charger = new QPowerSourceProvider(QPowerSource::Wall, "Charger", this);
     battery = new QPowerSourceProvider(QPowerSource::Battery, "DefaultBattery", this);
-    charging = false;
-    usb = false;
 
-    motodPidUpdate();
 
 }
 
-void EzxBattery::motodPidUpdate()
-{
-    int fd = open("/var/run/motod.pid",O_RDONLY);
-    char cpid[11];
-    read(fd,&cpid,11);
-    close(fd);
-    motod_pid = atoi(cpid);
+static inline void motod_short_request(int code,  motod_request *req ) {
+
+
+  struct sockaddr_un motosock; 
+  memset(&motosock,0,sizeof(motosock));
+  motosock.sun_family = PF_LOCAL; 
+
+  strncpy( 
+   motosock.sun_path,
+   "/var/run/motod.socket", 
+   sizeof(motosock.sun_path) - 1 
+  ); 
+
+
+  int fd = socket ( PF_LOCAL, SOCK_STREAM, 0 );
+
+  connect(fd,(struct sockaddr*)&motosock, SUN_LEN(&motosock) ); 
+
+  req->id = code;
+  
+  write(fd,req,sizeof(req)) ;
+  read(fd,req,40);
+  close(fd);
+
 }
 
 void EzxBattery::updateMotStatus()
 {
-    POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
 
-    //int power;
-    bool chargerState = false;
+  motod_request req; 
 
-    int batt_result = 0;
-    //char cbatt_result[16];
+  // battery info
+  motod_short_request(MOTOD_IPC_SUMMARY,&req);
 
-    if (kill(motod_pid,SIGUSR1) == -1) {
-      motodPidUpdate();
-      kill(motod_pid,SIGUSR1) ;
-    }
+  battery->setCharge( req.data[0] );
 
-    FILE *bf = fopen("/tmp/battery", "r");
-    if (bf)
-    {
-      fscanf(bf, "%d", &batt_result);
-      fclose(bf);
-    }
+  if (req.data[0] == 1)
+     battery->setAvailability(QPowerSource::NotAvailable);
+  else
+     battery->setAvailability(QPowerSource::Available);
 
-    // FIXME
-    battery->setCharge( (int) batt_result );
+  // charging state
 
-    // FIXME
-    chargerState = ( !access("/tmp/charging",F_OK) );
-
-    // with no battary it whill be 1
-    if (info.batt_result == 1)
-       battery->setAvailability(QPowerSource::NotAvailable);
-    else
-       battery->setAvailability(QPowerSource::Available);
-
-    // FIXME
-    if (chargerState || !access("/tmp/usbcable", F_OK )) 
-            charger->setAvailability(QPowerSource::Available);
-    else
-            charger->setAvailability(QPowerSource::Failed);
-    
-
-    battery->setCharging(chargerState );
+  if (req.data[1]) 
+          charger->setAvailability(QPowerSource::Available);
+  else
+          charger->setAvailability(QPowerSource::Failed);
+  
+  battery->setCharging( req.data[2] );
 }
 
 
