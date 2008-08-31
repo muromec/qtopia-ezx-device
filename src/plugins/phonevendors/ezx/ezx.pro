@@ -10,6 +10,7 @@ HEADERS		=  ezxplugin.h   ezxbattery.h   ezxmodemservice.h \
   ezxmodemsiminfo.h \
   ezxmodemsupplementaryservices.h \
   ezxmodemsmssender.h \
+  ezxmodemcallprovider.h \
   ezxmodemsmsreader.h
 
 SOURCES	        =  ezxplugin.cpp ezxbattery.cpp ezxmodemservice.cpp \
@@ -19,6 +20,7 @@ SOURCES	        =  ezxplugin.cpp ezxbattery.cpp ezxmodemservice.cpp \
   ezxmodemsiminfo.cpp \
   ezxmodemsupplementaryservices.cpp \
   ezxmodemsmssender.cpp \
+  ezxmodemcallprovider.cpp \
   ezxmodemsmsreader.cpp
 
 
