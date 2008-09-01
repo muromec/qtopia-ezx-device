@@ -80,10 +80,9 @@ bool EzxSuspend::canSuspend() const
 bool EzxSuspend::suspend()
 {
   qLog(PowerManagement)<<"EzxSuspend::suspend()";
-  printf("suspend\n");
-
 
   motod_request req;
+  memset(&req,0,sizeof(req));
 
   struct sockaddr_un motosock; 
   memset(&motosock,0,sizeof(motosock));
@@ -101,7 +100,7 @@ bool EzxSuspend::suspend()
   int ret = ::connect(fd,(struct sockaddr*)&motosock, SUN_LEN(&motosock) ); 
 
   req.id = MOTOD_IPC_SUSPEND;
-  req.data[0] = 1;
+  req.data[0] = 0;
   
   write(fd,&req,sizeof(req)) ;
   read(fd,&req,40);
@@ -109,12 +108,11 @@ bool EzxSuspend::suspend()
   close(fd);
 
 
-  return true;
+  return req.data[0];
 }
 
 bool EzxSuspend::wake()
 {
-    printf("wake\n");
     QWSServer::instance()->refresh();
 
 
