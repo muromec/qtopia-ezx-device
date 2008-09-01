@@ -96,7 +96,6 @@ public:
 EzxModemCallProvider::EzxModemCallProvider( QModemService *service )
     : QPhoneCallProvider( service->service(), service )
 {
-    printf("call provider\n");
     d = new EzxModemCallProviderPrivate();
     d->service = service;
     d->detectTimer = new QTimer( this );
@@ -676,15 +675,23 @@ void EzxModemCallProvider::cring( const QString& msg )
 
 void EzxModemCallProvider::callNotification( const QString& msg )
 {
-    if ( msg.startsWith( "NO CARRIER" ) ||
-         msg.startsWith( "NO ANSWER" ) ||
-         msg.startsWith( "NO DIALTONE" ) ||
-         msg.startsWith( "BUSY" ) ) {
 
-        // Foreground call was aborted by remote side or network error.
-        if ( !d->hangupTimer->isActive() ) {
-            hangupRemote( 0 );
-        }
+    if ( msg.startsWith ("CONNECT: ") ) {
+       uint posn = 8;
+       uint identifier = QAtUtils::parseNumber( msg, posn ); 
+       QModemCall *call = callForIdentifier( identifier );
+       call->setState( QPhoneCall::Connected );
+
+
+    }  else if ( msg.startsWith( "NO CARRIER" ) ||
+       msg.startsWith( "NO ANSWER" ) ||
+       msg.startsWith( "NO DIALTONE" ) ||
+       msg.startsWith( "BUSY" ) ) {
+
+      // Foreground call was aborted by remote side or network error.
+      if ( !d->hangupTimer->isActive() ) {
+          hangupRemote( 0 );
+      }
 
     }
 }
