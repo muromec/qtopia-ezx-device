@@ -186,9 +186,9 @@ void EZXKbdHandler::readKbdData()
         case 0x10: qtKeyCode = Qt::Key_Select; break;
 
         // Keys on left hand side of device
-        case 0x25: qtKeyCode = Qt::Key_VolumeUp; break;
-        case 0x26: qtKeyCode = Qt::Key_VolumeDown; break;
-        case 0x27: qtKeyCode = Qt::Key_Select; break;
+        case 0x25: qtKeyCode = Qt::Key_F30; break; // vol +
+        case 0x26: qtKeyCode = Qt::Key_F31; break; // vol -
+        case 0x27: qtKeyCode = Qt::Key_Select; break; 
 
         // Keys on right hand side of device
         case 0x19: qtKeyCode = Qt::Key_F4; break;
@@ -200,14 +200,14 @@ void EZXKbdHandler::readKbdData()
         // headphone 
         case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
 
-        case 0x2e: qtKeyCode = Qt::Key_F29; break;
+        case 0x2e: qtKeyCode = Qt::Key_F29; break; // E6 lockswitch
         
-        case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
+        case 0x17: qtKeyCode = Qt::Key_F32; break; // browser
         case 0x2d:
-        case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
-        case 0x2c: qtKeyCode = Qt::Key_MediaPlay; break;
-        case 0x2a: qtKeyCode = Qt::Key_MediaPrevious; break;
-        case 0x2b: qtKeyCode = Qt::Key_MediaNext ; break;
+        case 0x2f: qtKeyCode = Qt::Key_F3; // player launch
+        case 0x2c: qtKeyCode = Qt::Key_F33; break; // play
+        case 0x2a: qtKeyCode = Qt::Key_F34; break; // prev
+        case 0x2b: qtKeyCode = Qt::Key_F35 ; break; // next
 
         // numpad
         case 0x00: qtKeyCode = Qt::Key_0; unicode  = 0x30; break;
