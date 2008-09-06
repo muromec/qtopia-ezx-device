@@ -1,0 +1,2 @@
+#!/bin/sh
+hwtool -c 4 4

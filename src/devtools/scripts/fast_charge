@@ -1,2 +1,0 @@
-#!/bin/sh
-echo -n "fast_cccv" > /sys/devices/platform/s3c2410-i2c/i2c-adapter/i2c-0/0-0008/chgmode
