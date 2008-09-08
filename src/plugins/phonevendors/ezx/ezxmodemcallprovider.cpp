@@ -675,18 +675,31 @@ void EzxModemCallProvider::cring( const QString& msg )
 
 void EzxModemCallProvider::callNotification( const QString& msg )
 {
+    QPhoneCall::State state;
+    uint posn = 0;
 
     if ( msg.startsWith ("CONNECT: ") ) {
-       uint posn = 8;
-       uint identifier = QAtUtils::parseNumber( msg, posn ); 
-       QModemCall *call = callForIdentifier( identifier );
-       call->setState( QPhoneCall::Connected );
+      posn = 8;
+      state = QPhoneCall::Connected;
+    }  else if (  msg.startsWith( "BUSY:" ) ) {
+      posn = 5;
+      state = QPhoneCall::HangupRemote ;
+    } else if  ( msg.startsWith( "NO CARRIER:" )) {
+      posn = 11;
+      state =  QPhoneCall::HangupRemote;
 
+    }
 
-    }  else if ( msg.startsWith( "NO CARRIER" ) ||
+    if (posn) {
+      uint identifier = QAtUtils::parseNumber( msg, posn ); 
+      QModemCall *call = callForIdentifier( identifier );
+      if (call)
+        call->setState( state );
+    }   else if ( msg.startsWith( "NO CARRIER" ) ||
        msg.startsWith( "NO ANSWER" ) ||
        msg.startsWith( "NO DIALTONE" ) ||
        msg.startsWith( "BUSY" ) ) {
+
 
       // Foreground call was aborted by remote side or network error.
       if ( !d->hangupTimer->isActive() ) {
