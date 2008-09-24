@@ -435,6 +435,7 @@ HeadphonesAudioState::HeadphonesAudioState(bool isPhone, QObject *parent)
     m_headset = new QValueSpaceItem("/Hardware/Accessories/PortableHandsfree/Present", this);
     connect( m_headset, SIGNAL(contentsChanged()),
              this, SLOT(onHeadsetModified()));
+    onHeadsetModified();
 
     //adaptor = new QtopiaIpcAdaptor("QPE/EZXModem", this );
 }

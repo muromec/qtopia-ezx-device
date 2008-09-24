@@ -49,18 +49,22 @@ private:
      QValueSpaceObject vsoPortableHandsfree;
      QValueSpaceObject vsoUsbCable;
      QValueSpaceObject vsoEzxHardware;
-     QtopiaIpcAdaptor *adaptor;
 
      void findHardwareVersion();
 
-     QtopiaIpcAdaptor         *audioMgr;
-//     QAudioStateConfiguration *audioConf;
+     int accyFd;
+     QSocketNotifier *accyNotify;
+     unsigned short accyEvent[40];
+
     
  
 private slots:
      void headphonesInserted(int type);
      void cableConnected(bool);
      void shutdownRequested();
+private Q_SLOTS:
+     void plug();
+
 };
 
 #endif
