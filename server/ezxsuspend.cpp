@@ -72,17 +72,8 @@ EzxSuspend::EzxSuspend()
 {
 }
 
-bool EzxSuspend::canSuspend() const
-{
-    return true;
-}
+static inline void motod_short_request(int code,  motod_request *req ) {
 
-bool EzxSuspend::suspend()
-{
-  qLog(PowerManagement)<<"EzxSuspend::suspend()";
-
-  motod_request req;
-  memset(&req,0,sizeof(req));
 
   struct sockaddr_un motosock; 
   memset(&motosock,0,sizeof(motosock));
@@ -97,17 +88,33 @@ bool EzxSuspend::suspend()
 
   int fd = socket ( PF_LOCAL, SOCK_STREAM, 0 );
 
-  int ret = ::connect(fd,(struct sockaddr*)&motosock, SUN_LEN(&motosock) ); 
+  connect(fd,(struct sockaddr*)&motosock, SUN_LEN(&motosock) ); 
 
-  req.id = MOTOD_IPC_SUSPEND;
-  req.data[0] = 0;
+  req->id = code;
   
-  write(fd,&req,sizeof(req)) ;
-  read(fd,&req,40);
-
+  write(fd,req,sizeof(req)) ;
+  read(fd,req,40);
   close(fd);
 
+}
 
+bool EzxSuspend::canSuspend() const
+{
+
+  qLog(PowerManagement)<<"EzxSuspend::canSuspend()";
+
+  motod_request req;
+  motod_short_request(MOTOD_IPC_CAN_SUSPEND,&req);
+  return req.data[0];
+
+}
+
+bool EzxSuspend::suspend()
+{
+  qLog(PowerManagement)<<"EzxSuspend::suspend()";
+
+  motod_request req;
+  motod_short_request(MOTOD_IPC_SUSPEND,&req);
   return req.data[0];
 }
 
@@ -118,7 +125,6 @@ bool EzxSuspend::wake()
 
 #ifdef Q_WS_QWS
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    QWSServer::screenSaverActivate( false );
     {
         /*QtopiaServiceRequest e("QtopiaPowerManager", "setBacklight(int)");
         e << -3; // Force on
