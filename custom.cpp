@@ -20,54 +20,62 @@
 
 
 #define FRAMEBUFFER_DEVICE "/dev/fb0"
+#define KEYLIGHT_DEVICE "/dev/keylight"
+
+#define PWMLED_0_ON             0xf0
+#define PWMLED_0_OFF            0xf2
+#define FRAMEBUFFER_DIM 11
+#define FRAMEBUFFER_MAX 100
 
 bool fb_disp_on;
 
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {
-    // FIXME
-    return 100;
+    return FRAMEBUFFER_MAX;
 }
 
 QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 {
-  // TODO: notify apmd
-  int fbh;
+  int fbh, kbh, kbvalue;
   int ret;
-  printf("brightness : %d\n",b);
-  fbh = open(FRAMEBUFFER_DEVICE, O_RDWR);
+
+  fbh = open(FRAMEBUFFER_DEVICE, O_RDWR); // lcd
+  kbh = open(KEYLIGHT_DEVICE,    O_RDWR); // keyboard
 
 
   if (b) {
 
-    if (b > 100) // normalize
-      b = 100;
-    else if (b == 1) // dim
-      b = 11; 
+    kbvalue = PWMLED_0_ON;
 
+    if (b > FRAMEBUFFER_MAX) { // normalize
+      b = FRAMEBUFFER_MAX ;
+    } else if (b == 1) { // dim
+      b = FRAMEBUFFER_DIM;
+      kbvalue = PWMLED_0_OFF;
+    } 
 
-    if (! fb_disp_on ) {
+    // if no power - set it
+    if (! fb_disp_on ) { 
       ret = ioctl(fbh, FBIOBLANK, VESA_NO_BLANKING);
       ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_ON);
 
       fb_disp_on = true;
     }
-    ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
   } else {
-    printf("lcd off\n");
+    kbvalue = PWMLED_0_OFF;
+
     // power down lcd to save power
-    ret = ioctl(fbh, FBIOSETBRIGHTNESS, 0); 
-
     ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_OFF);
-
     ret = ioctl(fbh, FBIOBLANK, VESA_POWERDOWN);
+
     fb_disp_on = false;
   }
 
-
-
+  ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
+  ret = ioctl(kbh, kbvalue, 1);
 
   close(fbh);
+  close(kbh);
 
 }
 
