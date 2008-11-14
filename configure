@@ -17,11 +17,7 @@
 -bluetooth
 -sound-system oss 
 -extra-qtopiacore-config "-depths 16,18"
--extra-qtopiacore-config "-qt-libjpeg"
--extra-qtopiacore-config "-qt-libmng"
 -extra-qtopiacore-config "-plugin-gfx-transformed" 
--extra-qtopiacore-config "-qt-libpng"
--extra-qtopiacore-config "-qt-zlib"
 -extra-qtopiacore-config "-qt-mouse-tslib" 
 -extra-qtopiacore-config "-no-mouse-pc" 
 -extra-qtopiacore-config "-no-mouse-linuxtp" 
@@ -29,9 +25,18 @@
 -extra-qtopiacore-config "-D QT_QWS_DISABLE_FLUSHCLIPPING" 
 -extra-qtopiacore-config "-no-qt3support "
 -extra-qtopiacore-config "-plugin-sql-sqlite" 
+-extra-qtopiacore-config "-system-zlib"
+-extra-qtopiacore-config "-system-libpng"
+-extra-qtopiacore-config "-system-libjpeg"
+-extra-qtopiacore-config "-qt-gif"
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
 -release
 -no-samples
+-lrt
+-sdk /opt/toolchains/arm-iwmmxt-linux-gnu/qtopia
+-L/opt/toolchains/arm-iwmmxt-linux-gnu/stage/lib
+-I/opt/toolchains/arm-iwmmxt-linux-gnu/stage/include
+-system-sqlite
 
 
