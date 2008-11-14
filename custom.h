@@ -42,7 +42,7 @@
 
 // Define the name of the Video4Linux device to use for the camera.
 #ifndef V4L_VIDEO_DEVICE
-#define V4L_VIDEO_DEVICE            "" //no video
+#define V4L_VIDEO_DEVICE            "/dev/video0" 
 #endif
 
 #define QTOPIA_ZONEINFO_PATH "/ezxlocal/Qtopia/zoneinfo/"
