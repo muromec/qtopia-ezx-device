@@ -419,6 +419,8 @@ HeadphonesAudioState::HeadphonesAudioState(bool isPhone, QObject *parent)
     : QAudioState(parent)
 {
     m_isPhone = isPhone;
+    phonefd = -1;
+    dspNULL = false;
 
     if (isPhone) {
         m_info.setDomain("Phone");
