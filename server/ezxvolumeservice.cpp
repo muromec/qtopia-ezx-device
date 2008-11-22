@@ -132,6 +132,7 @@ void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustTyp
         leftright = (left + right) >> 1;
         m_d->currVolume = leftright;
         ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OGAIN), &leftright);       
+        ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &leftright);
         close(mixerFd);
     }
 }
