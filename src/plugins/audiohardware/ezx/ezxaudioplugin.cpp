@@ -47,9 +47,42 @@
 
 #include <string.h>
 
+#include <qaudiooutput.h>
 
-static inline bool set_audio_mode(int mode, int recmode)
+int phonefd = -1;
+
+static void set_audio_bp() {
+
+        // if dsp opened
+        if (qtopia_dsp_fd > 0) {
+          close(qtopia_dsp_fd);
+          qtopia_dsp_fd = -1;
+        }
+
+        // open bp link
+        if (phonefd == -1) {
+          usleep(600000);
+          phonefd = open("/dev/phone",O_RDONLY);
+          printf("phone fd opened: %d\n", phonefd);
+        }
+
+}
+
+static void set_audio_ap() {
+      // close phonefd
+      if (phonefd != -1 ) {
+        close(phonefd)          ;
+        phonefd = -1;
+      }
+}
+
+static inline bool set_audio_mode(int mode, int recmode,bool bp)
 {
+
+    if (bp)
+      set_audio_bp();
+    else
+      set_audio_ap();
 
     int mixerFd = ::open("/dev/mixer", O_RDWR);
 
@@ -64,43 +97,6 @@ static inline bool set_audio_mode(int mode, int recmode)
     return false;
 }
 
-static inline int dsp_fd()
-{
-    struct dirent **namelist;
-    int n;
-    char dir[15];
-    char path[256];
-    char link[20];
-
-
-    int ret;
-
-    sprintf(dir,"/proc/%d/fd/",getpid());
-  
-    n = scandir(dir, &namelist, 0, alphasort);
-    if (n < 0)
-        perror("scandir");
-    else {
-        while(n--) {
-            sprintf(link,"/proc/%d/fd/%s",getpid(),namelist[n]->d_name);
-
-            ret = readlink (link, path,256);
-            if (ret >0) {
-              path[ret] = '\0';
-              if (! strcmp("/dev/dsp",path) )
-              {
-                printf("ok, %s - %s\n",namelist[n]->d_name,path);
-                return (atoi(namelist[n]->d_name));
-              }
-                
-              
-            } 
-            free(namelist[n]);
-        }
-        free(namelist);
-    }
-    return -1;
-}
 
 #ifdef QTOPIA_BLUETOOTH
 class BluetoothAudioState : public QAudioState
@@ -171,8 +167,6 @@ BluetoothAudioState::BluetoothAudioState(bool isPhone, QObject *parent)
     }
 
     m_info.setDisplayName(tr("Bluetooth Headset"));
-
-    //adaptor = new QtopiaIpcAdaptor("QPE/EZXModem", this );
 
     m_isAvail = false;
     if(resetCurrAudioGateway())
@@ -289,18 +283,12 @@ public:
 private:
     QAudioStateInfo m_info;
     bool m_isPhone;
-    int phonefd;
-    int dspfd;
-    FILE* dspFILE;
-    bool dspNULL;
 };
 
 SpeakerAudioState::SpeakerAudioState(bool isPhone, QObject *parent)
     : QAudioState(parent)
 {
     m_isPhone = isPhone;
-    phonefd = -1;
-    dspNULL = false;
 
     if (isPhone) {
         m_info.setDomain("Phone");
@@ -332,36 +320,14 @@ bool SpeakerAudioState::isAvailable() const
 
 bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
-    printf("SpeakerAudioState::enter, p:%d, dspnull: %d\n", m_isPhone, dspNULL  );
 
-    // if phone mode
     if (m_isPhone) {
-
-        // find /dev/dsp file descriptor
-        dspfd =  dsp_fd() ;
-
-        // if dsp opened
-        if (dspfd > 0) {
-
-          printf("dsp fd found. in phome mode reopening to null\n");
-
-          // get FILE
-          dspFILE = fdopen(dspfd,"w");
-
-          // reopen to null
-          freopen ("/dev/null","w",dspFILE);
-          
-          // set flag
-          dspNULL = true;
-        }
-
-        // open bp link
-        phonefd = open("/dev/phone",O_RDONLY);
-
-        return set_audio_mode(EARPIECE_OUT,HANDSET_INPUT);
+        return set_audio_mode(EARPIECE_OUT,HANDSET_INPUT,true);
         
-    } 
-    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT);
+    } else { 
+        return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,false);
+
+    }
         
 
         
@@ -369,18 +335,6 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 
 bool SpeakerAudioState::leave()
 {
-    if (m_isPhone)  {
-      // close phonefd
-      if (phonefd > 0)
-        close(phonefd)          ;
-
-      // reopen dsp
-      if (dspNULL) {
-        freopen ("/dev/dsp","w",dspFILE);
-        dspNULL = false;
-      }
-
-    }
     return true;
 }
 
@@ -408,19 +362,12 @@ private:
     QtopiaIpcAdaptor *adaptor;
     int headType;
     
-    int phonefd;
-    int dspfd;
-    FILE* dspFILE;
-    bool dspNULL;
-
 };
 
 HeadphonesAudioState::HeadphonesAudioState(bool isPhone, QObject *parent)
     : QAudioState(parent)
 {
     m_isPhone = isPhone;
-    phonefd = -1;
-    dspNULL = false;
 
     if (isPhone) {
         m_info.setDomain("Phone");
@@ -439,7 +386,6 @@ HeadphonesAudioState::HeadphonesAudioState(bool isPhone, QObject *parent)
              this, SLOT(onHeadsetModified()));
     onHeadsetModified();
 
-    //adaptor = new QtopiaIpcAdaptor("QPE/EZXModem", this );
 }
 
 QAudioStateInfo HeadphonesAudioState::info() const
@@ -457,7 +403,6 @@ void HeadphonesAudioState::onHeadsetModified()
     bool avail = m_headset->value(false).toBool();
     headType = m_headset->value(0).toInt();
 
-    printf("onHeadsetModified %d %d\n",avail,headType);
     emit availabilityChanged(avail);
 }
 
@@ -470,32 +415,7 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 {
     Q_UNUSED(capability)
 
-    if (m_isPhone) {
-
-        // find /dev/dsp file descriptor
-        dspfd =  dsp_fd() ;
-
-        // if dsp opened
-        if (dspfd > 0) {
-
-          printf("dsp fd found. in phome mode reopening to null\n");
-
-          // get FILE
-          dspFILE = fdopen(dspfd,"w");
-
-          // reopen to null
-          freopen ("/dev/null","w",dspFILE);
-
-          // set flag
-          dspNULL = true;
-        }
-
-        // open bp link
-        phonefd = open("/dev/phone",O_RDONLY);
-    } 
-
     int in, out;
-    printf("HeadphonesAudioState::enter, m_isPhone: %d, %d\n",m_isPhone,headType);
     switch ( headType ) {
 
       // 2.5 mm headset
@@ -536,7 +456,7 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 
           break;
     }
-    return set_audio_mode(out,in);
+    return set_audio_mode(out,in,m_isPhone);
 
 
 
@@ -544,20 +464,6 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 
 bool HeadphonesAudioState::leave()
 {
-    printf("HeadphonesAudioState::leave, m_isPhone: %d\n",m_isPhone);
-    
-    if (m_isPhone)  {
-      // close phonefd
-      if (phonefd > 0)
-        close(phonefd)          ;
-
-      // reopen dsp
-      if (dspNULL) {
-        freopen ("/dev/dsp","w",dspFILE);
-        dspNULL = false;
-      }
-
-    }
     return true;
 }
 
@@ -577,18 +483,12 @@ public:
 
 private:
     QAudioStateInfo m_info;
-    int phonefd;
-    int dspfd;
-    FILE* dspFILE;
-    bool dspNULL;
-
+    
 };
 
 SpeakerphoneAudioState::SpeakerphoneAudioState(QObject *parent)
     : QAudioState(parent)
 {
-    phonefd = -1;
-    dspNULL = false;
 
     m_info.setDomain("Phone");
     m_info.setProfile("PhoneSpeakerphone");
@@ -613,47 +513,11 @@ bool SpeakerphoneAudioState::isAvailable() const
 
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
-    printf("SpeakerphoneAudioState::enter capability %d\n", capability         );
-    
-    // find /dev/dsp file descriptor
-    dspfd =  dsp_fd() ;
-
-
-    // if dsp opened
-    if (dspfd > 0) {
-
-      // get FILE
-      dspFILE = fdopen(dspfd,"w");
-
-      // reopen to null
-      freopen ("/dev/null","w",dspFILE);
-
-      // set flag
-      dspNULL = true;
-    }
-
-    // open bp link
-    phonefd = open("/dev/phone",O_RDONLY);
-
-    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT);
-
-    return true;
+    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,true);
 }
 
 bool SpeakerphoneAudioState::leave()
 {
-      printf("SpeakerphoneAudioState::leave \n" );
-      
-      if (phonefd > 0)
-        close(phonefd)          ;
-
-      // reopen dsp
-      if (dspNULL) {
-        printf("reopening back...\n");
-        freopen ("/dev/dsp","w",dspFILE);
-        dspNULL = false;
-      }
-
       return true;
 }
 
