@@ -432,7 +432,7 @@ void EzxCamera::getCameraImage( QImage& img, bool copy )
 
     if (width > 320) {
       QPixmap pix;
-      qDebug() << "pixmap" <<  pix.loadFromData( (uchar*) m_imageBuf, height*width*2, "JPEG");
+      qDebug() << "pixmap" <<  pix.loadFromData( (uchar*) buf_orig, height*width*2, "JPEG");
       img = pix.toImage();
     } else {
       img = QImage((uchar*) m_imageBuf, height, width, QImage::Format_RGB16);
