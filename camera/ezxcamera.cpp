@@ -44,7 +44,7 @@ QSize EzxCamera::captureSize() const
 
 uint EzxCamera::refocusDelay() const
 {
-    return 250;
+    return 200;
 }
 
 int EzxCamera::minimumFramePeriod() const
@@ -65,7 +65,7 @@ EzxCamera::~EzxCamera()
 
 void EzxCamera::setupCamera( QSize size )
 {
-    qDebug() << "setup";
+    qDebug() << "setup" << size.width() << size.height();
     // Clear important variables.
     frames = 0;
     currentFrame = 0;
@@ -81,30 +81,15 @@ void EzxCamera::setupCamera( QSize size )
         return;
     }
 
-    // Set palette mode
-    struct { int r1; int r2; } _pm = { 15, 15 };
-    ioctl(fd, WCAM_VIDIOCSINFOR, &_pm);
-
+    
     // Determine the capture size to use.  Zero indicates "preview mode".
     if ( size.width() == 0 ) {
-        size = QSize(144, 176);
+        size = recommendedPreviewSize();
     }
 
-    width = size.height();
-    height = size.width();
+    
+    setSize( size );
 
-    // Set the new capture window.
-    struct video_window wind;
-    memset(&wind, 0, sizeof(wind));
-
-    wind.width = width;
-    wind.height = height;
-
-    if ( ioctl( fd, VIDIOCSWIN, &wind ) < 0 ) {
-        qWarning("%s: could not set the capture window", VIDEO_DEVICE);
-    }
-
-    m_imageBuf = (quint16*) malloc(width * height * 2);
 
     // Enable mmap-based access to the camera.
     memset( &mbuf, 0, sizeof( mbuf ) );
@@ -125,14 +110,68 @@ void EzxCamera::setupCamera( QSize size )
         return;
     }
 
-    // Start capturing of the first frame.
-    int ret = ioctl(fd, VIDIOCCAPTURE, 0);
-    if (ret) {
-      close(fd);
-      fd = -1;
-      return;
+   start(); 
+}
+void EzxCamera::setSize( QSize size ) {
+
+    height = size.height();
+    width  = size.width();
+
+    int ret;
+
+    struct { int r1; int r2; } _pm;
+
+    struct {
+        __u16 width, height;
+    } csize;
+
+    if (width > 320) {
+      _pm.r1 = 20;
+      _pm.r2 = 0;
+      qDebug() << "photo!";
+    } else {
+      _pm.r1 = 15;
+      _pm.r2 = 15;
     }
-    qDebug() << "capture" << ret;
+
+    ret = ioctl(fd, WCAM_VIDIOCSINFOR, &_pm);
+    qDebug() << "WCAM_VIDIOCSINFOR" << ret;
+    ioctl(fd, WCAM_VIDIOCSCINFOR, &_pm);
+    qDebug() << "WCAM_VIDIOCSCINFOR" << ret;
+
+
+    csize.width = width;
+    csize.height = height;
+
+    qDebug() << "win" << csize.width << csize.height;;
+
+    /*if ( ioctl( fd, VIDIOCSWIN, &csize ) < 0 ) {
+        qWarning("%s: could not set the capture window", VIDEO_DEVICE);
+    }*/
+
+    qDebug() << "video" << csize.width << csize.height;;
+
+    if ( ioctl( fd, WCAM_VIDIOCSSSIZE, &csize) < 0) {
+        qWarning("cannot set size\n");
+    }
+    
+
+    qDebug() << "out" << csize.width << csize.height;;
+    
+    if ( ioctl( fd, WCAM_VIDIOCSOSIZE, &csize) < 0) {
+        qWarning("cannot set out size\n");
+    } 
+     
+
+    if ( ioctl( fd, WCAM_VIDIOCSCSIZE, &csize) < 0) {
+        qWarning("cannot set still size\n");
+    } 
+
+
+    if (m_imageBuf)
+      free(m_imageBuf);
+
+    m_imageBuf = (quint16*) malloc(width * height * 2);
 }
 
 void EzxCamera::shutdown()
@@ -145,8 +184,7 @@ void EzxCamera::shutdown()
     }
 
     if ( fd != -1 ) {
-        int ret = ioctl(fd, VIDIOCCAPTURE, -1);
-        qDebug() << "stop capture" << ret;
+        stop();
         close( fd );
         fd = -1;
     }
@@ -158,6 +196,27 @@ void EzxCamera::shutdown()
     }
 }
 
+void EzxCamera::stop() 
+{
+   int ret = ioctl(fd, VIDIOCCAPTURE, -1);
+   qDebug() << "stop" << ret;
+}
+
+void EzxCamera::start() {
+
+  // Set palette mode
+    int ret = ioctl(fd, VIDIOCCAPTURE, 0);
+  qDebug() << "capture" << ret;
+}
+
+void EzxCamera::photo() {
+
+
+
+  int ret = ioctl(fd, VIDIOCCAPTURE, 1);
+  qDebug() << "capturing photo" << ret;
+
+}
 
 static const signed short redAdjust[] = {
 -161,-160,-159,-158,-157,-156,-155,-153,
@@ -322,6 +381,8 @@ void EzxCamera::getCameraImage( QImage& img, bool copy )
 {
     Q_UNUSED(copy);
 
+    int ret;
+
     if ( fd == -1 ) {
         if ( img.isNull() ) {
             img = QImage(height, width, QImage::Format_RGB16);
@@ -329,22 +390,19 @@ void EzxCamera::getCameraImage( QImage& img, bool copy )
         return;
     }
 
-    int ret;
     fd_set rfds;
     FD_ZERO (&rfds);
     FD_SET (fd, &rfds);
 
-    qDebug() << "before select";
-    ret = select (fd+1, &rfds, NULL, NULL, NULL);
-    qDebug() << "after select" << ret;
+    select (fd+1, &rfds, NULL, NULL, NULL);
 
     static int _lastFrame = 1;
 
     struct V4l_IMAGE_FRAME frame;
 
-    qDebug() << "before grab";
     ret = ioctl(fd, WCAM_VIDIOCGRABFRAME, &frame);
-    qDebug() << "after grab" << ret;
+    if (ret) 
+      qWarning("cant grab frame");
 
     int currentFrame = (_lastFrame - 1) % mbuf.frames;
     unsigned char *buf_orig = frames + mbuf.offsets[currentFrame];
@@ -365,14 +423,20 @@ void EzxCamera::getCameraImage( QImage& img, bool copy )
 
     int cap = 1;
 
-    qDebug() << "before next";
-    ret = ioctl(fd, WCAM_VIDIOCNEXTFRAME, &cap);
-    qDebug() << "after next" << ret;
+    ret =ioctl(fd, WCAM_VIDIOCNEXTFRAME, &cap);
+    if (ret)
+      qWarning("cant switch to next frame");
 
     if(cap != _lastFrame)
         _lastFrame = cap;
 
-    img = QImage((uchar*) m_imageBuf, height, width, QImage::Format_RGB16);
+    if (width > 320) {
+      QPixmap pix;
+      qDebug() << "pixmap" <<  pix.loadFromData( (uchar*) m_imageBuf, height*width*2, "JPEG");
+      img = pix.toImage();
+    } else {
+      img = QImage((uchar*) m_imageBuf, height, width, QImage::Format_RGB16);
+    }
 
 }
 
@@ -380,20 +444,19 @@ QList<QSize> EzxCamera::photoSizes() const
 {
     QList<QSize> list;
 
-    /*
-    list << QSize(176, 144) << QSize(160, 120) <<
+    list << QSize(176, 176) << QSize(160, 120) <<
+            QSize(176, 176) <<
             QSize(320, 240) << QSize(352, 288) <<
             QSize(640, 480) << QSize(1280, 1024);
-    */
-    list << QSize(480, 640) << QSize(240, 320) << QSize(144, 176);
 
     return list;
 }
 
 QList<QSize> EzxCamera::videoSizes() const
 {
-    // We use the same sizes for both.
-    return photoSizes();
+    QList<QSize> list;
+    list << QSize(176, 176) << QSize(176, 176) << QSize(320, 240) ;
+    return list;
 }
 
 QSize EzxCamera::recommendedPhotoSize() const
@@ -408,15 +471,20 @@ QSize EzxCamera::recommendedVideoSize() const
 
 QSize EzxCamera::recommendedPreviewSize() const
 {
-    return QSize(144, 176);
+    return QSize(176, 176);
 }
 
 void EzxCamera::setCaptureSize( QSize size )
 {
-    if ( size.width() != height || size.height() != width) {
-        /*shutdown();
-        setupCamera( size );*/
-    }
+    qDebug() << "set size" <<  size.width() << size.height();
+
+    stop();
+    setSize( size );
+
+    if (size.width() > 320) 
+      photo();
+    else
+      start();
 }
 
 } // ns camera

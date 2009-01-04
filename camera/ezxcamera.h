@@ -70,6 +70,12 @@ private:
 
     void setupCamera( QSize size );
     void shutdown();
+
+    void stop();
+    void start();
+    void photo();
+    
+    void setSize( QSize size );
 };
 
 
