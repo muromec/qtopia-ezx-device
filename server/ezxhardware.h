@@ -1,72 +1,40 @@
-/****************************************************************************
-**
-** Copyright (C) 2000-2008 TROLLTECH ASA. All rights reserved.
-**
-** This file is part of the Opensource Edition of the Qtopia Toolkit.
-**
-** This software is licensed under the terms of the GNU General Public
-** License (GPL) version 2.
-**
-** See http://www.trolltech.com/gpl/ for GPL licensing information.
-**
-** Contact info@trolltech.com if any conditions of this licensing are
-** not clear to you.
-**
-**
-**
-** This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-** WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-**
-****************************************************************************/
-
-#ifndef EZXHARDWARE_H
-#define ezxHARDWARE_H
-
-#ifdef QT_QWS_EZX
+#ifndef _EZXHARDWARE_H_
+#define _EZXHARDWARE_H_
 
 #include <QObject>
-#include <QProcess>
+#include <QValueSpaceObject>
+#include <QFileMonitor>
+#include <QPowerSourceProvider>
+#include <QSocketNotifier>
 
-#include <qvaluespace.h>
-#include <linux/input.h>
-
-class QBootSourceAccessoryProvider;
-class QPowerSourceProvider;
-
-class QSocketNotifier;
-class QtopiaIpcAdaptor;
-class QSpeakerPhoneAccessoryProvider;
-
-class EzxHardware : public QObject
+class EzxHardware: public QObject
 {
-    Q_OBJECT
+  Q_OBJECT
+  public:
+    EzxHardware(QObject *parent = NULL);
+    virtual ~EzxHardware();
 
-public:
-    EzxHardware();
-    ~EzxHardware();
+    void plugAccesory(int type);
+    void unplugAccesory(int type);
+    void checkAccesories();
+  private slots:
+    void accyEvent(int);
+    void chargeUpdated();
+  private:
+    int batteryRaw();
+    int batteryPercent(int raw);
 
-private:
-     QValueSpaceObject vsoPortableHandsfree;
-     QValueSpaceObject vsoUsbCable;
-     QValueSpaceObject vsoEzxHardware;
+    int accy_fd;
 
-     void findHardwareVersion();
+    QValueSpaceObject vsoPortableHandsfree;
+    QValueSpaceObject vsoUsbCable;
+    QValueSpaceObject vsoEzxHardware;
 
-     int accyFd;
-     QSocketNotifier *accyNotify;
-     unsigned short accyEvent[40];
+    QPowerSourceProvider charger;
+    QPowerSourceProvider battery;
 
-    
- 
-private slots:
-     void headphonesInserted(int type);
-     void cableConnected(bool);
-     void shutdownRequested();
-private Q_SLOTS:
-     void plug();
-
+    QFileMonitor fileMon;
+    QSocketNotifier *accy_noti;
 };
 
-#endif
-
-#endif
+#endif // _EZXHARDWARE_H_

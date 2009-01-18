@@ -3,7 +3,8 @@ TARGET=ezxvendor
 
 CONFIG+=no_tr
 
-HEADERS		=  ezxplugin.h   ezxbattery.h   ezxmodemservice.h \
+HEADERS		=  ezxplugin.h \
+  ezxmodemservice.h \
   ezxvibrateaccessory.h \
   ezxmodempinmanager.h \
   ezxmodemnetworkregistration.h \
@@ -13,7 +14,8 @@ HEADERS		=  ezxplugin.h   ezxbattery.h   ezxmodemservice.h \
   ezxmodemcallprovider.h \
   ezxmodemsmsreader.h
 
-SOURCES	        =  ezxplugin.cpp ezxbattery.cpp ezxmodemservice.cpp \
+SOURCES	        =  ezxplugin.cpp \
+  ezxmodemservice.cpp \
   ezxvibrateaccessory.cpp \
   ezxmodempinmanager.cpp \
   ezxmodemnetworkregistration.cpp \

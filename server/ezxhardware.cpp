@@ -1,158 +1,166 @@
-/****************************************************************************
-**
-** Copyright (C) 2000-2008 TROLLTECH ASA. All rights reserved.
-**
-** This file is part of the Opensource Edition of the Qtopia Toolkit.
-**
-** This software is licensed under the terms of the GNU General Public
-** License (GPL) version 2.
-**
-** See http://www.trolltech.com/gpl/ for GPL licensing information.
-**
-** Contact info@trolltech.com if any conditions of this licensing are
-** not clear to you.
-**
-**
-**
-** This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-** WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-**
-****************************************************************************/
+#include "config.h"
 
-#ifdef QT_QWS_EZX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+#define CONFIG_ARCH_EZX
+#include <linux/moto_accy.h>
+#include <linux/power_ic.h>
+
+#include <QPowerSourceProvider>
+#include <QSocketNotifier>
+#include <QFileMonitor>
+#include <qtopiaserverapplication.h>
+#include <qtopialog.h>
 
 #include "ezxhardware.h"
 
-#include <QSocketNotifier>
-#include <QTimer>
-#include <QLabel>
-#include <QDesktopWidget>
-#include <QProcess>
-#include <QtopiaIpcAdaptor>
-
-#include <qcontentset.h>
-#include <qtopiaapplication.h>
-#include <qtopialog.h>
-#include <qtopiaipcadaptor.h>
-
-#include <qbootsourceaccessory.h>
-#include <qtopiaipcenvelope.h>
-
-#include <qtopiaserverapplication.h>
-
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <linux/input.h>
-#include <linux/moto_accy.h>
-
-#include <sys/ioctl.h>
-
 QTOPIA_TASK(EzxHardware, EzxHardware);
+//QTOPIA_DEMAND_TASK(EzxAccessory, EzxAccessory);
+//QTOPIA_TASK_PROVIDES(EzxSuspend, SystemSuspendHandler);
 
-EzxHardware::EzxHardware()
-    : vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
-      vsoUsbCable("/Hardware/UsbGadget"),
-      vsoEzxHardware("/Hardware/EZX")
+EzxHardware::EzxHardware(QObject *parent)
+  : QObject(parent),
+    fileMon("/proc/apm", QFileMonitor::Auto, this),
+    battery(QPowerSource::Battery, "DefaultBattery", this),
+    charger(QPowerSource::Wall, "Charger", this),
+    vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
+    vsoUsbCable("/Hardware/UsbGadget"),
+    vsoEzxHardware("/Hardware/EZX")
 {
+  accy_fd = open("/dev/accy", O_RDWR);
+  if (accy_fd>=0)
+  {
+    checkAccesories();
+    accy_noti = new QSocketNotifier(accy_fd, QSocketNotifier::Read, this);
+    connect(accy_noti, SIGNAL(activated(int)), SLOT(accyEvent(int)));
+  }
+  else
+    qLog(Hardware) << "Error: could not open accy";
 
-    vsoPortableHandsfree.setAttribute("Present", false);
-    vsoUsbCable.setAttribute("Present", false);
+  connect(&fileMon, SIGNAL(fileChanged(QString)), SLOT(chargeUpdated()));
 
-    vsoPortableHandsfree.sync();
-    vsoUsbCable.sync();
-
-
-    unsigned long int connected_cables;
-
-    accyFd = ::open("/dev/accy", O_RDWR);
-    if (accyFd>=0) {
-      qLog(Hardware)<<"Opened /dev/accy";
-        accyNotify = new QSocketNotifier(accyFd, QSocketNotifier::Read, this);
-        connect(accyNotify, SIGNAL(activated(int)), 
-            this, SLOT(plug()));
-
-    } else {
-      qLog(Hardware)<<"Cannot open /dev/accy";
-    }
-
-
-
-    ioctl(accyFd, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &connected_cables);
-
-    while (connected_cables){
-      int n = generic_ffs(connected_cables) - 1;
-
-      if ((n>13) && (n<20)) { // headset
-        headphonesInserted(n);
-      } else if (n==11) {      // usb
-        cableConnected(true);
-      }
-
-      connected_cables &= ~(1 << (n));
-    }
-
-
-// Handle Audio State Changes
-    //audioMgr = new QtopiaIpcAdaptor("QPE/AudioStateManager", this);
-
-
-    findHardwareVersion();
+  vsoEzxHardware.setAttribute("Device", "EZX");
 }
 
 EzxHardware::~EzxHardware()
 {
+  if (accy_fd>=0)
+    close(accy_fd);
 }
-void EzxHardware::plug() 
+
+
+void EzxHardware::accyEvent(int)
 {
-  read(accyFd,&accyEvent,40);
+  unsigned long int event;
+  read(accy_fd, &event, 4);
+  qLog(Hardware) << "EzxAccessory:" << (0x7fffffff&event) << ((event & 0x80000000)?"plugged":"unplugged");
+  if (event & 0x80000000)
+    plugAccesory  (0x7fffffff & event);
+  else
+    unplugAccesory(0x7fffffff & event);
+}
 
-  if (accyEvent[1]) { //plug
-    qLog(Hardware) << "plug cable";
+void EzxHardware::plugAccesory(int type)
+{
+  switch (type)
+  {
+    case MOTO_ACCY_TYPE_CARKIT_MID:
+    case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
+    case MOTO_ACCY_TYPE_CHARGER_MID:
+        charger.setAvailability(QPowerSource::Available);
+        battery.setCharging(true);
+        vsoUsbCable.setAttribute("cableConnected", true);
+      break;
+    case MOTO_ACCY_TYPE_CABLE_USB:
+        vsoUsbCable.setAttribute("cableConnected", true);
+      break;
 
-    if (accyEvent[0]>14) // headphone
-      headphonesInserted(accyEvent[0]);
-    else if  (accyEvent[0]=11) // usb
-      cableConnected(true);
-  }  else { // unplug
-    qLog(Hardware) << "unplug cable"; 
+    // headsets handled by script and qtopia
+    case MOTO_ACCY_TYPE_HEADSET_MONO:
+    case MOTO_ACCY_TYPE_HEADSET_STEREO:
+    case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
+    case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
+    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
+    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
+      vsoPortableHandsfree.setAttribute("Present", type);
+      break;
+    //default:
+        //dbg("attached cable %d",type);
+    }
+}
 
-    if (accyEvent[0]>14) // headphone
-      headphonesInserted(0);
-    else if  (accyEvent[0]=11) // usb
-      cableConnected(false);
+void EzxHardware::unplugAccesory(int type)
+{
+  switch (type)
+  {
+    case MOTO_ACCY_TYPE_CARKIT_MID:
+    case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
+    case MOTO_ACCY_TYPE_CHARGER_MID:
+      charger.setAvailability(QPowerSource::NotAvailable);
+      battery.setCharging(false);
+      vsoUsbCable.setAttribute("cableConnected", false);
+      break;
+    case MOTO_ACCY_TYPE_CABLE_USB:
+      vsoUsbCable.setAttribute("cableConnected", false);
+      break;
 
+    case MOTO_ACCY_TYPE_HEADSET_MONO:
+    case MOTO_ACCY_TYPE_HEADSET_STEREO:
+    case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
+    case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
+    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
+    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
+      vsoPortableHandsfree.setAttribute("Present", 0);
+      break;
+
+    //default:
+       // dbg("detached cable %d",type);
+    }
+}
+
+void EzxHardware::checkAccesories()
+{
+  unsigned long int accys;
+  ioctl(accy_fd, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &accys);
+  while (accys)
+  {
+    int n = generic_ffs(accys) - 1;
+    plugAccesory(n);
+
+    accys &= ~(1 << (n));
   }
-
-
 }
-// TODO: find phone model
-void EzxHardware::findHardwareVersion()
+
+void EzxHardware::chargeUpdated()
 {
-    vsoEzxHardware.setAttribute("Device", "EZX");
-    vsoEzxHardware.sync();
+  qLog(Hardware) << "Updating charge";
+  int charge_raw = batteryRaw();
+  int charge_percent = batteryPercent(charge_raw);
+  qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
+  battery.setCharge(charge_percent);
 }
 
-void EzxHardware::headphonesInserted(int  type)
+int EzxHardware::batteryRaw()
 {
-    qLog(Hardware)<< __PRETTY_FUNCTION__ << type;
-    vsoPortableHandsfree.setAttribute("Present", type);
-    vsoPortableHandsfree.sync();
+  int power_fd = open("/dev/power_ic", O_RDWR);
+  if (power_fd>=0)
+  {
+    POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
+    info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
+
+    ioctl(power_fd, POWER_IC_IOCTL_ATOD_BATT_AND_CURR, &info);
+    return info.batt_result;
+  }
+  else
+    return -1;
 }
 
-void EzxHardware::cableConnected(bool b)
+int EzxHardware::batteryPercent(int raw)
 {
-    qLog(Hardware)<< __PRETTY_FUNCTION__ << b;
-    vsoUsbCable.setAttribute("cableConnected", b);
-    vsoUsbCable.sync();
+  return (raw - 490 ) * 10 / 22;
 }
-
-void EzxHardware::shutdownRequested()
-{
-    qLog(PowerManagement)<< __PRETTY_FUNCTION__;
-
-    QtopiaServerApplication::instance()->shutdown(QtopiaServerApplication::ShutdownSystem);
-}
-
-#endif // QT_QWS_EZX
 

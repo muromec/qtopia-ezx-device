@@ -1,6 +1,5 @@
 #include "ezxvibrateaccessory.h"
 #include "ezxmodemservice.h"
-#include "ezxbattery.h"
 #include "ezxmodempinmanager.h"
 #include "ezxmodemnetworkregistration.h"
 #include "ezxmodemsiminfo.h"
@@ -122,10 +121,6 @@ void EzxModemService::initialize()
 
     if ( !callProvider() )
               setCallProvider( new EzxModemCallProvider( this ) );
-
-
-    EzxBattery* bat;
-    bat = new EzxBattery ( this  );
 
     QModemService::initialize();
 }
