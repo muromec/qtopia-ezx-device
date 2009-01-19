@@ -54,6 +54,7 @@ EzxAPM::EzxAPM(QObject *parent)
     startPMU();
 
     setPowerPolicy(Battery);
+    setPowerProfile(n_profiles-1); // High performance is good at startup
 
     apm_noti = new QSocketNotifier(apm_fd, QSocketNotifier::Read, this);
     connect(apm_noti, SIGNAL(activated(int)), SLOT(apmEvent(int)));
