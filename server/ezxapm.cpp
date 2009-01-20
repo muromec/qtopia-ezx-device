@@ -26,6 +26,7 @@
 #define MAX_LOAD_BALANCE 10
 
 QTOPIA_TASK(EzxAPM, EzxAPM);
+QTOPIA_TASK_PROVIDES(EzxAPM, SystemSuspendHandler);
 
 // EzxAPM power profiles; greater index gives more power
 const ipm_config EzxAPM::power_profiles[] =
