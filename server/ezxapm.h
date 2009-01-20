@@ -2,53 +2,56 @@
 #define _APM_H_
 
 #include <QObject>
+#include <QValueSpaceObject>
+#include <QPowerStatus>
+#include <systemsuspend.h>
 class QSocketNotifier;
 
-class EzxAPM: public QObject
+class EzxAPM: public SystemSuspendHandler
 {
   Q_OBJECT
   public:
-    enum PowerPolicy
-    {
-      Charger,
-      Battery
-    };
     EzxAPM(QObject *parent = NULL);
     virtual ~EzxAPM();
 
-    void readyRead();
-
-    void setPowerPolicy(PowerPolicy new_policy);
-    void adjustPower(int load = -1);
-
-    void gearUp();
-    void gearDown();
-
-    void sleep();
     void startPMU();
 
-    int timeSlept() const;
+    // SystemSuspendHandler implementation
+    bool canSuspend() const;
+    bool suspend();
+    bool wake();
+
   private slots:
     void apmEvent(int fd);
-  signals:
-    void canSleep();
-  private:
-    void setPowerProfile(int n);
 
-    QSocketNotifier *apm_noti;
+  private:
+    void adjustPower(int load = -1);
+    void gearUp();
+    void gearDown();
+    void setPowerProfile(int n);
+    void sleep();
+    void setTSState(bool st);
 
     int apm_fd;
+    QSocketNotifier *apm_noti;
 
     int current_profile;
-    PowerPolicy policy;
     int load_balance;
 
     int total_slept_time;
+    bool sleep_allowed;
 
-    int cpu_load;
+    QPowerStatus power_status;
+
+    bool allow_low_perf;
+    bool allow_high_perf;
+
+    QValueSpaceObject vso;
 
     static const struct ipm_config power_profiles[];
     static const int n_profiles;
+    static const int n_profiles_low;
+    static const int n_profiles_high;
 };
 
 #endif // _APM_H_

@@ -19,8 +19,6 @@
 #include "ezxhardware.h"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
-//QTOPIA_DEMAND_TASK(EzxAccessory, EzxAccessory);
-//QTOPIA_TASK_PROVIDES(EzxSuspend, SystemSuspendHandler);
 
 EzxHardware::EzxHardware(QObject *parent)
   : QObject(parent),
@@ -28,7 +26,6 @@ EzxHardware::EzxHardware(QObject *parent)
     battery(QPowerSource::Battery, "DefaultBattery", this),
     charger(QPowerSource::Wall, "Charger", this),
     vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
-    vsoUsbCable("/Hardware/UsbGadget"),
     vsoEzxHardware("/Hardware/EZX")
 {
   accy_fd = open("/dev/accy", O_RDWR);
@@ -52,7 +49,6 @@ EzxHardware::~EzxHardware()
     close(accy_fd);
 }
 
-
 void EzxHardware::accyEvent(int)
 {
   unsigned long int event;
@@ -71,12 +67,10 @@ void EzxHardware::plugAccesory(int type)
     case MOTO_ACCY_TYPE_CARKIT_MID:
     case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
     case MOTO_ACCY_TYPE_CHARGER_MID:
-        charger.setAvailability(QPowerSource::Available);
-        battery.setCharging(true);
-        vsoUsbCable.setAttribute("cableConnected", true);
-      break;
+      charger.setAvailability(QPowerSource::Available);
+      battery.setCharging(true);
     case MOTO_ACCY_TYPE_CABLE_USB:
-        vsoUsbCable.setAttribute("cableConnected", true);
+      vsoEzxHardware.setAttribute("Cable/Connected", true);
       break;
 
     // headsets handled by script and qtopia
@@ -102,10 +96,8 @@ void EzxHardware::unplugAccesory(int type)
     case MOTO_ACCY_TYPE_CHARGER_MID:
       charger.setAvailability(QPowerSource::NotAvailable);
       battery.setCharging(false);
-      vsoUsbCable.setAttribute("cableConnected", false);
-      break;
     case MOTO_ACCY_TYPE_CABLE_USB:
-      vsoUsbCable.setAttribute("cableConnected", false);
+      vsoEzxHardware.setAttribute("Cable/Connected", false);
       break;
 
     case MOTO_ACCY_TYPE_HEADSET_MONO:
@@ -137,10 +129,10 @@ void EzxHardware::checkAccesories()
 
 void EzxHardware::chargeUpdated()
 {
-  qLog(Hardware) << "Updating charge";
   int charge_raw = batteryRaw();
   int charge_percent = batteryPercent(charge_raw);
-  qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
+  vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
+  //qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
   battery.setCharge(charge_percent);
 }
 
@@ -153,6 +145,7 @@ int EzxHardware::batteryRaw()
     info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
 
     ioctl(power_fd, POWER_IC_IOCTL_ATOD_BATT_AND_CURR, &info);
+    close(power_fd);
     return info.batt_result;
   }
   else

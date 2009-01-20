@@ -27,7 +27,6 @@ class EzxHardware: public QObject
     int accy_fd;
 
     QValueSpaceObject vsoPortableHandsfree;
-    QValueSpaceObject vsoUsbCable;
     QValueSpaceObject vsoEzxHardware;
 
     QPowerSourceProvider charger;
