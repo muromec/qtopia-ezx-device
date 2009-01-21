@@ -81,6 +81,7 @@ EzxAPM::EzxAPM(QObject *parent)
 
   // Initialize ValueSpace
   vso.setAttribute("TimeSlept", total_slept_time);
+  vso.setAttribute("TimeSleptString", QString("0:00"));
   // CPU/Clock is initialised in setPowerProfile()
 }
 
@@ -151,7 +152,8 @@ void EzxAPM::apmEvent(int)
           if (sleep_allowed)
           {
             sleep();
-            sleep_allowed = false;
+            //sleep_allowed = false;
+            //emit operationCompleted();
           }
           break;
        }
@@ -178,6 +180,9 @@ void EzxAPM::sleep()
 
   // Publish sleep stats to ValueSpace
   vso.setAttribute("TimeSlept", total_slept_time);
+  char tmp[16];
+  sprintf(tmp, "%d:%02d", total_slept_time/60, total_slept_time%60);
+  vso.setAttribute("TimeSleptString", QString(tmp));
 }
 
 void EzxAPM::startPMU()
@@ -268,6 +273,7 @@ bool EzxAPM::suspend()
 
 bool EzxAPM::wake()
 {
+  qLog(PowerManagement)<<"EzxAPM::wake()";
   sleep_allowed = false;
   QWSServer::instance()->refresh();
 
@@ -283,6 +289,8 @@ bool EzxAPM::wake()
 
 void EzxAPM::setTSState(bool st)
 {
+  /* // Cannot be compiled as c++ because of sizeof(void)
+  qLog(PowerManagement) << "EzxAPM::setTSState" << st;
   int power_fd = open("/dev/power_ic", O_RDWR);
   if (power_fd>=0)
   {
@@ -299,4 +307,10 @@ void EzxAPM::setTSState(bool st)
 
     close(power_fd);
   }
+  else
+  {
+    qLog(PowerManagement) << "Failed to open power_ic";
+  }
+  */
 }
+
