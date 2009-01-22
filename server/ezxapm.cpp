@@ -225,9 +225,15 @@ void EzxAPM::adjustPower(int load)
   {
     case QPowerStatus::Available: // Charger is plugged, we may use as much power as we can
       if (allow_high_perf)
-        setPowerProfile(n_profiles-1);
+      {
+        if (current_profile<n_profiles-1)
+          setPowerProfile(n_profiles-1);
+      }
       else
-        setPowerProfile(n_profiles-n_profiles_high-1);
+      {
+        if (current_profile<n_profiles_high-1)
+          setPowerProfile(n_profiles-n_profiles_high-1);
+      }
       break;
 
     case QPowerStatus::NotAvailable: // No charger available, so think before switching
