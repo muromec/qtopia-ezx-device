@@ -21,9 +21,26 @@ QWidget *EzxFlipScreen::newWidget(ThemeWidgetItem *item, const QString &name)
   if (name.toLower()=="volumecontrol")
   {
     RadialVolumeWidget *vol = new RadialVolumeWidget(this);
-    connect(this, SIGNAL(volumeUp()), vol, SLOT(stepUp()));
-    connect(this, SIGNAL(volumeDown()), vol, SLOT(stepDown()));
+    connect(this, SIGNAL(volume_stepUp()), vol, SLOT(stepUp()));
+    connect(this, SIGNAL(volume_stepDown()), vol, SLOT(stepDown()));
     return vol;
   }
   return NULL;
 }
+
+void EzxFlipScreen::volumeUp()
+{
+  qLog() << "EzxFlipScreen::volumeUp()";
+  emit volume_stepUp();
+}
+
+void EzxFlipScreen::volumeDown()
+{
+  qLog() << "EzxFlipScreen::volumeDown()";
+  emit volume_stepDown();
+}
+
+void EzxFlipScreen::showMenu()
+{
+}
+

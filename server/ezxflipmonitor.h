@@ -4,6 +4,7 @@
 #include <QObject>
 #include <qtopiainputevents.h>
 #include <QValueSpaceItem>
+#include <QValueSpaceObject>
 
 class EzxFlipScreen;
 
@@ -19,6 +20,7 @@ class EzxFlipMonitor: public QObject, public QtopiaKeyboardFilter
   private:
     EzxFlipScreen *scr;
     QValueSpaceItem clamshellVsi;
+    QValueSpaceObject keyLockVso;
 };
 
 #endif // _EZXFLIPMONITOR_H_

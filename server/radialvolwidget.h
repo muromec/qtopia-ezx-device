@@ -15,12 +15,13 @@ class RadialVolumeWidget: public QWidget
   public slots:
     void stepUp();
     void stepDown();
+
+    void showControl();
+    void hideControl();
   protected:
     void paintEvent(QPaintEvent *event);
     void resizeEvent(QResizeEvent *event);
-    
-    void keyPressEvent(QKeyEvent *ev);
-  private:    
+  private:
     RadialVolumeWidgetPrivate *d;
 };
 
