@@ -83,6 +83,9 @@ EzxAPM::EzxAPM(QObject *parent)
   vso.setAttribute("TimeSlept", total_slept_time);
   vso.setAttribute("TimeSleptString", QString("0:00"));
   // CPU/Clock is initialised in setPowerProfile()
+
+  EzxAPMService *service = new EzxAPMService(this);
+  (void)service;
 }
 
 EzxAPM::~EzxAPM()
@@ -221,6 +224,12 @@ void EzxAPM::setPowerProfile(int n)
 
 void EzxAPM::adjustPower(int load)
 {
+  if (!perf_locks.empty()) // Need high performance
+  {
+    if (current_profile<n_profiles-1)
+      setPowerProfile(n_profiles-1);
+    return;
+  }
   switch (power_status.wallStatus())
   {
     case QPowerStatus::Available: // Charger is plugged, we may use as much power as we can
@@ -318,5 +327,54 @@ void EzxAPM::setTSState(bool st)
     qLog(PowerManagement) << "Failed to open power_ic";
   }
   */
+}
+
+void EzxAPM::lockHighPerformance(const QString &id)
+{
+  perf_locks.insert(id);
+  qLog(PowerManagement) << "perf_locks:" << perf_locks.toList();
+  adjustPower(-1);
+}
+
+void EzxAPM::releaseHighPerformance(const QString &id)
+{
+  perf_locks.remove(id);
+  qLog(PowerManagement) << "perf_locks:" << perf_locks.toList();
+}
+
+void EzxAPM::requestHighPerformance(const QString &reason)
+{
+  if (current_profile<n_profiles-1)
+    setPowerProfile(n_profiles-1);
+}
+
+// Service interface to EzxAPM
+
+void EzxAPMService::lockHighPerformance(const QString &id)
+{
+  qLog(PowerManagement) << "High Performance lock:" << id;
+  m_task->lockHighPerformance(id);
+}
+
+void EzxAPMService::releaseHighPerformance(const QString &id)
+{
+  qLog(PowerManagement) << "High Performance release:" << id;
+  m_task->releaseHighPerformance(id);
+}
+
+void EzxAPMService::requestHighPerformance(const QString &reason)
+{
+  qLog(PowerManagement) << "Requested High Performance mode for" << reason;
+  m_task->requestHighPerformance(reason);
+}
+
+EzxAPMService::EzxAPMService(EzxAPM *task)
+  : QtopiaAbstractService("APM", task), m_task(task)
+{
+  publishAll();
+}
+
+EzxAPMService::~EzxAPMService()
+{
 }
 
