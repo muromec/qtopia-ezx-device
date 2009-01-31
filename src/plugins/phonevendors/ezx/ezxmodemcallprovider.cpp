@@ -18,6 +18,7 @@
 #include <qtopiaphonemodem/private/qmodempppdmanager_p.h>
 #include <qtopialog.h>
 #include <qtimer.h>
+#include <QtopiaServiceRequest>
 
 #include "stdio.h"
 /*!
@@ -169,6 +170,11 @@ void EzxModemCallProvider::ringing
             d->missedTimer->start( INCOMING_MISSED_TIMEOUT );
         return;
     }
+
+    qLog(Modem) << "Incoming call! HighPerf!";
+    QtopiaServiceRequest req("APM", "requestHighPerformance(QString)");
+    req << "Incoming Call";
+    req.send();
 
     // Record the new information that we got.
     if ( !number.isEmpty() )
@@ -691,7 +697,7 @@ void EzxModemCallProvider::callNotification( const QString& msg )
     }
 
     if (posn) {
-      uint identifier = QAtUtils::parseNumber( msg, posn ); 
+      uint identifier = QAtUtils::parseNumber( msg, posn );
       QModemCall *call = callForIdentifier( identifier );
       if (call)
         call->setState( state );
