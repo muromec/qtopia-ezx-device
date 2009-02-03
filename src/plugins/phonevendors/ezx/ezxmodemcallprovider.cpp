@@ -701,6 +701,11 @@ void EzxModemCallProvider::callNotification( const QString& msg )
       QModemCall *call = callForIdentifier( identifier );
       if (call)
         call->setState( state );
+
+      // FIXME: more then one call
+      if (state == QPhoneCall::HangupRemote)
+         atchat()->chat( "ATH" );
+
     }   else if ( msg.startsWith( "NO CARRIER" ) ||
        msg.startsWith( "NO ANSWER" ) ||
        msg.startsWith( "NO DIALTONE" ) ||
