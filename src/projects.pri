@@ -3,9 +3,7 @@ PROJECTS*=\
     plugins/phonevendors/ezx \
     plugins/multiplexers/ezx \
     plugins/audiohardware/ezx \
-    devtools 
-
-	  
-
-
+    devtools  \
+    themes/qtblack \
+    themes/qtopia
 

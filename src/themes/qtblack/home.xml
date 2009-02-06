@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<page xmlns="http://www.trolltech.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.trolltech.com themedview.xsd" name="home" base="themes/qtblack">
+  <group name="background">
+    <image name="background" rect="0,0,0x0" src="ladybug" scale="yes"/>
+    <plugin name="bgplugin"/>
+  </group>
+    <text name="datetime" rect="0,61%,0x12pt" align="hcenter,vcenter" short ="yes" size="8" bold="yes" outline="#eeeeee">
+        expr:@/UI/DisplayTime/Date . "                  " . @/UI/DisplayTime/Time
+    </text>
+	<widget name="AppointmentsHSWidget"/>
+    <text name="appointmenttitle" rect="0,16%,0x13pt" bold="yes" color="#ffffff" outline="#000000" size="7" align="center,vcenter" elided="right">
+        expr: @/PIM/Appointments/Next/title
+    </text>
+    <text name="appointmenttitle" rect="0,23%,0x13pt" bold="yes" color="#ffffff" outline="#000000" size="7" align="center,vcenter" elided="right" transient="yes"  active="expr:!@/PIM/Appointments/Next/none">
+        expr: @/PIM/Appointments/Next/location . " " . @/PIM/Appointments/Next/time
+    </text>
+	<widget name="LauncherHSWidget" rect="0,45%,100%x15%" interactive="yes"/>
+  <text name="TimeSlept" rect="0%,35%,0x12pt" bold="yes" color="#ffffff" outline="#000000" size="7" align="center,vcenter">
+    expr: "Sleep mode: " . @/Hardware/EZX/APM/TimeSleptString
+  </text>
+  <rect rect="0,35%,0x11pt">
+    <text name="location" size="10" bold="yes" rect="0,35%,50%x11pt" align="left,vcenter" color="#ffffff" outline="#000000" transient="yes" active="expr:@/UI/HomeScreen/ShowLocation">
+      expr:" " . @/Telephony/Status/CellLocation
+    </text>
+    <text name="profile" size="10" bold="yes" rect="50%,0,48%x12pt" align="right,vcenter" color="#ffffff" outline="#000000" transient="yes" active="expr:@/UI/HomeScreen/ShowProfile &amp;&amp; !@/UI/Profile/Default">
+      expr:@/UI/Profile/Name . " "
+    </text>
+    </rect>
+    <layout rect="0,20%,0x45pt" align="hcenter">
+	  <rect name="calls" rect="0,0,0x0" color="None" brush="None" transient="yes" active="expr:@/Communications/Calls/MissedCalls > 0" interactive="yes">
+        <layout align="hcenter">
+          <rect rect="0,0,24ptx42pt">
+            <image rect="0,0,24ptx24pt" src="call.svg" scale="yes"/>
+          </rect>
+        </layout>
+        <text name="calls" size="12" rect="0,27pt,0x13pt" align="hcenter" bold="yes" color="#ffffff" outline="#000000" >
+          <tr><trtext>%1 missed</trtext><trarg>@/Communications/Calls/MissedCalls</trarg></tr>
+        </text>
+	  </rect>
+	  <rect name="messages" rect="0,0,0x0" brush="None" transient="yes" active="expr:@/Communications/Messages/NewMessages > 0 || @/Telephony/Status/SMSMemoryFull > 0" interactive="yes">
+        <layout align="hcenter">
+          <rect rect="0,0,24ptx24pt">
+            <image rect="0,0,24ptx24pt" src="message.svg" scale="yes"/>
+          </rect>
+        </layout>
+        <rect rect="0,27pt,0x18pt">
+          <text rect="0,0,0x13pt" align="hcenter" bold="yes" color="#ffffff" outline="#000000" transient="yes" active="expr:@/Communications/Messages/NewMessages > 0">
+		    <tr><trtext>%1 new</trtext><trarg>@/Communications/Messages/NewMessages</trarg></tr>
+          </text>
+          <text rect="0,0,0x9pt" align="hcenter" bold="yes" color="#ffffff" outline="#000000" transient="yes" active="expr:@/Telephony/Status/SMSMemoryFull > 0 &amp;&amp; @/Communications/Messages/NewMessages == 0">SMS full</text>
+          <text rect="0,50%,0x9pt" align="hcenter,bottom" bold="yes" color="#ffffff" outline="#000000" transient="yes" active="expr:@/Telephony/Status/SMSMemoryFull > 0 &amp;&amp; @/Communications/Messages/NewMessages > 0">(SMS full)</text>
+        </rect>
+	  </rect>
+    </layout>
+    <rect name="infobox" rect="10%,48%,80%x15%" color="Text" brush="Background" alpha="150" transient="yes" active="no">
+      <image name="infobox" rect="0,0,40x100%"/>
+      <text name="infobox" rect="40,0,-3,-1" size="11" bold="yes" color="Text" align="hcenter,vcenter"/>
+    </rect>
+    <layout rect="0,72%,100%x15%" orientation="horizontal">
+       <rect rect="0,0,0x0">
+        <image name="mainmenu" rect="10%,0,80%x100%" src="button.svg" onclick="src=buttonp.svg" interactive="yes">
+          <image rect="20%,20%,60%x60%" src="menu.svg" scale="yes"/>
+        </image>
+      </rect>
+      <rect rect="0,0,0x0">
+        <image name="speeddial" rect="10%,0,80%x100%" src="button.svg" onclick="src=buttonp.svg" interactive="yes">
+          <image rect="20%,20%,60%x60%" src=":icon/favorite.svg" scale="yes"/>
+        </image>
+      </rect>
+      <rect rect="0,0,0x0">
+        <image name="lock" rect="10%,0,80%x100%" src="button.svg" onclick="src=buttonp.svg" interactive="yes">
+          <image rect="20%,20%,60%x60%" src="padlock.svg" scale="yes"/>
+        </image>
+      </rect>
+	  	 <rect rect="0,0,0x0">
+        <image name="dialer" rect="10%,0,80%x100%" src="button.svg" onclick="src=buttonp.svg" interactive="yes">
+          <image rect="20%,20%,60%x60%" src="phone.svg" scale="yes"/>
+        </image>
+      </rect>
+    </layout>
+    <layout name="pinbox" rect="0,0,0,0" orientation="vertical" align="hcenter,vcenter" transient="yes" active="no" keypad="no">
+      <rect name="pinbox" rect="0,0,240x69" brush="#000000">
+	    <image name="pinbox" rect="0,0,40x138"/>
+	    <text name="pinbox" rect="40,0,0x0" size="12" color="Text" align="hcenter,vcenter"/>
+      </rect>
+    <layout name="vertical" rect="0,0,240x188" orientation="vertical" spacing="-1" align="vcenter">
+      <layout name="horizontal" rect="0,0,0x47" orientation="horizontal" spacing="-1" align="hcenter">
+        <group rect="0,0,40x24" name="one" interactive="yes">
+          <image rect="0,0,0,0" name="one_bg" src="pin1.png" onclick="src=pin1p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="two" interactive="yes">
+          <image rect="0,0,0,0" name="two_bg" src="pin2.png" onclick="pin2p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="three" interactive="yes">
+          <image rect="0,0,0,0" name="three_bg" src="pin3.png" onclick="src=pin3p.png" interactive="yes" scale="yes" />
+        </group>
+      </layout>
+      <layout rect="0,0,0x47" orientation="horizontal" spacing="-1" align="hcenter" >
+        <group rect="0,0,40x24" name="four" interactive="yes">
+          <image rect="0,0,0,0" name="four_bg" src="pin4.png" onclick="src=pin4p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="five" interactive="yes">
+          <image rect="0,0,0,0" name="five_bg" src="pin5.png" onclick="src=pin5p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="six" interactive="yes">
+          <image rect="0,0,0,0" name="six_bg" src="pin6.png" onclick="src=pin6p.png" interactive="yes" scale="yes" />
+        </group>
+      </layout>
+      <layout rect="0,0,0x47" orientation="horizontal" spacing="-1" align="hcenter" >
+        <group rect="0,0,40x24" name="seven" interactive="yes">
+          <image rect="0,0,0,0" name="seven_bg" src="pin7.png" onclick="src=pin7p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="eight" interactive="yes">
+          <image rect="0,0,0,0" name="eight_bg" src="pin8.png" onclick="src=pin8p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="nine" interactive="yes">
+          <image rect="0,0,0,0" name="nine_bg" src="pin9.png" onclick="src=pin9p.png" interactive="yes" scale="yes" />
+        </group>
+      </layout>
+      <layout rect="0,0,0x47" orientation="horizontal" spacing="-1" align="hcenter" >
+        <group rect="0,0,40x24" name="star" interactive="yes">
+          <image rect="0,0,0,0" name="star_bg" src="pinstar.png" onclick="src=pinstarp.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="zero" interactive="yes">
+          <image rect="0,0,0,0" name="zero_bg" src="pin0.png" onclick="src=pin0p.png" interactive="yes" scale="yes" />
+        </group>
+        <group rect="0,0,40x24" name="hash" interactive="yes">
+          <image rect="0,0,0,0" name="hash_bg" src="pinhash.png" onclick="src=pinhashp.png" interactive="yes" scale="yes" />
+        </group>
+      </layout>
+    </layout>
+  </layout>
+</page>

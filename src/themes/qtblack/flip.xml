@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<page xmlns="http://www.trolltech.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.trolltech.com themedview.xsd" name="ezxflipscreen" base="themes/qtopia">
+  <group name="background">
+    <image name="background" rect="0,0,0x0" src="ladybug" scale="yes"/>
+    <plugin name="bgplugin"/>
+  </group>
+  <text name="datetime" rect="0,10%,0x30pt" align="hcenter,vcenter" short ="yes" size="30" bold="yes" outline="#111111" color="#ffffff">
+        expr:@/UI/DisplayTime/Time                                        
+    </text>
+  
+  <widget name="VolumeControl" rect="0,135,240x300" align="hcenter,vcenter" interactive="yes"/> 
+  
+</page>

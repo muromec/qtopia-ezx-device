@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<page xmlns="http://www.trolltech.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.trolltech.com themedview.xsd" name="dialer" base="themes/qtblack" keypad="no">
+<!--    <image name="background" rect="0,0,0,0" src="background" scale="yes"/>-->
+    <widget name="dialernumber" rect="0,4,0x32" bold="yes" colorGroup="Background=#EEEEEE;Base=#DDDDDD" bgcolor="Text" size="12"/>
+    <layout name="vertical" rect="0,32,0,0" orientation="vertical" spacing="-1" align="vcenter">
+	<layout name="horizontal" rect="0,0,0x42" orientation="horizontal" spacing="-1" align="hcenter">
+	    <group rect="0,0,60x42" name="one" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),1">
+          <image rect="0,0,0,0" name="one_bg" src="1.png" onclick="src=1p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="two" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),2">
+          <image rect="0,0,0,0" name="two_bg" src="2.png" onclick="src=2p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="three" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),3">
+          <image rect="0,0,0,0" name="three_bg" src="3.png" onclick="src=3p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="selectcontact" interactive="yes" onclick="message=Qtopia/Phone/TouchscreenDialer,selectContact()">
+          <image rect="0,0,0,0" name="contact_bg" src="generic-personal-contact.png" onclick="src=generic-personal-contactp.png" interactive="yes" scale="yes" />
+	    </group>
+	</layout>
+	<layout rect="0,0,0x42" orientation="horizontal" spacing="-1" align="hcenter" >
+        <group rect="0,0,60x42" name="four" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),4">
+        <image rect="0,0,0,0" name="four_bg" src="4.png" onclick="src=4p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="five" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),5">
+          <image rect="0,0,0,0" name="five_bg" src="5.png" onclick="src=5p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="six" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),6">
+		<image rect="0,0,0,0" name="six_bg" src="6.png" onclick="src=6p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="messages" interactive="yes" onclick="message=Qtopia/Phone/TouchscreenDialer,sms()">
+		<image rect="0,0,0,0" name="messages_bg" src="messages.png" onclick="src=messagesp.png" interactive="yes" scale="yes" />
+	    </group>
+	</layout>
+	<layout rect="0,0,0x42" orientation="horizontal" spacing="-1" align="hcenter" >
+	    <group rect="0,0,60x42" name="seven" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),7">
+		<image rect="0,0,0,0" name="seven_bg" src="7.png" onclick="src=7p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="eight" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),8">
+		<image rect="0,0,0,0" name="eight_bg" src="8.png" onclick="src=8p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="nine" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),9">
+		<image rect="0,0,0,0" name="nine_bg" src="9.png" onclick="src=9p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="callhistory" interactive="yes" onclick="message=Qtopia/Phone/TouchscreenDialer,showCallHistory()">
+		<image rect="0,0,0,0" name="calls_bg" src="CallHistory.png" onclick="src=CallHistoryp.png" interactive="yes" scale="yes" />
+	    </group>
+	</layout>
+	<layout rect="0,0,0x42" orientation="horizontal" spacing="-1" align="hcenter" >
+	    <group rect="0,0,60x42" name="star" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),*">
+		<image rect="0,0,0,0" name="star_bg" src="star.png" onclick="src=starp.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="zero" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),0">
+		<image rect="0,0,0,0" name="zero_bg" src="0.png" onclick="src=0p.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="hash" interactive="yes" onclick="message=VirtualKeyboard,keyPress(int),#">
+		<image rect="0,0,0,0" name="hash_bg" src="hash.png" onclick="src=hashp.png" interactive="yes" scale="yes" />
+	    </group>
+	    <group rect="0,0,60x42" name="hangup" interactive="yes" onclick="message=Qtopia/Phone/TouchscreenDialer,hangup()">
+		<image rect="0,0,0,0" name="hangup_bg" src="hangup.png" onclick="src=hangupp.png" interactive="yes" scale="yes" />
+	    </group>
+	</layout>
+    <layout rect="0,0,0x42" orientation="horizontal" spacing="3" align="hcenter" >
+      <group rect="0,0,240x42" name="call" interactive="yes" onclick="message=Qtopia/Phone/TouchscreenDialer,dial()">
+        <image rect="0,0,0,0" name="call" src="buttoncall.svg" onclick="src=buttonp.svg" interactive="yes" scale="yes" />
+        <text rect="0,0,0,0" bold="yes" outline="#000000" color="#FFFFFF" size="15" align="hcenter,vcenter">Call</text>
+      </group>
+    </layout>
+    </layout>
+</page>
