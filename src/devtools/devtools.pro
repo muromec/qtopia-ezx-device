@@ -13,9 +13,8 @@ for(p,PROJECTS) {
 }
 QMAKE_STRIP=
 
-startup.files=$$QTOPIA_DEPOT_PATH/devices/ezx/src/devtools/startup/qpe.sh \
-              $$QTOPIA_DEPOT_PATH/devices/ezx/src/devtools/startup/qpe.env
-startup.path=/
+startup.files=$$QTOPIA_DEPOT_PATH/devices/ezx/src/devtools/startup/qpe.sh 
+startup.path=/bin
 startup.hint=script
 INSTALLS+=startup
 
