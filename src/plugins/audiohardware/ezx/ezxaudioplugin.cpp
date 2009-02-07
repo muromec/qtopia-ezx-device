@@ -53,19 +53,22 @@ int phonefd = -1;
 
 static void set_audio_bp() {
 
+
         // if dsp opened
-        if (qtopia_dsp_fd > 0) {
-          close(qtopia_dsp_fd);
-          qtopia_dsp_fd = -1;
-        }
+        if (qtopia_dsp != NULL) {
+          if (*qtopia_dsp > 0) {
+            close(*qtopia_dsp);
+            *qtopia_dsp = -2;
+            qDebug() << "dsp fd closed";
+          }
+        } 
 
         // open bp link
-        if (phonefd == -1) {
+        if (phonefd <= 0) {
           usleep(600000);
           phonefd = open("/dev/phone",O_RDONLY);
-          printf("phone fd opened: %d\n", phonefd);
-        }
-
+          qDebug() << "phone fd opened" << phonefd;
+        } 
 }
 
 static void set_audio_ap() {
@@ -74,6 +77,15 @@ static void set_audio_ap() {
         close(phonefd)          ;
         phonefd = -1;
       }
+
+
+      if (qtopia_dsp != NULL) {
+          if (*qtopia_dsp == -2) {
+             *qtopia_dsp  = ::open( "/dev/dsp", O_WRONLY ) ;
+             qDebug() << "dsp fd restored" << *qtopia_dsp ;
+          }
+          
+      } 
 }
 
 static inline bool set_audio_mode(int mode, int recmode,bool bp)
