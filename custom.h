@@ -33,9 +33,9 @@
 #define QPE_NEED_CALIBRATION
 
 #define QTOPIA_ENABLE_EXPORTED_BACKGROUNDS
-//#define QTOPIA_ENABLE_GLOBAL_BACKGROUNDS
+#define QTOPIA_ENABLE_GLOBAL_BACKGROUNDS
 #define NO_VISUALIZATION
-#define QGLOBAL_PIXMAP_CACHE_LIMIT 360000 // memory is soooo cheeeeap
+#define QGLOBAL_PIXMAP_CACHE_LIMIT 0xa0000 // memory is soooo cheeeeap
 
 
 
@@ -46,3 +46,5 @@
 #endif
 
 #define QTOPIA_ZONEINFO_PATH "/ezxlocal/Qtopia/zoneinfo/"
+
+#define NO_WIRELESS_LAN
