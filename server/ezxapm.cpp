@@ -143,7 +143,6 @@ void EzxAPM::apmEvent(int)
         // PMU tells us current CPU load value
         case EVENT_PROF_IDLE:
           adjustPower(apm_event.info);
-          startPMU();
 
         // high cpu or mem load
         case EVENT_PROF_PERF:
@@ -162,6 +161,8 @@ void EzxAPM::apmEvent(int)
        }
       break;
   }
+
+  startPMU();
 }
 
 void EzxAPM::sleep()
