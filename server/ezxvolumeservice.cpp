@@ -53,6 +53,7 @@ EzxVolumeService::EzxVolumeService():
 
     m_d = new EzxVolumeServicePrivate;
     m_d->currVolume = 0;
+    setVolume(60);
 
     QTimer::singleShot(0, this, SLOT(registerService()));
 }
@@ -130,9 +131,10 @@ void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustTyp
         }
 
         leftright = (left + right) >> 1;
+        int input = leftright;
         m_d->currVolume = leftright;
         ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OGAIN), &leftright);       
-        ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &leftright);
+        ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &input);
         close(mixerFd);
     }
 }
