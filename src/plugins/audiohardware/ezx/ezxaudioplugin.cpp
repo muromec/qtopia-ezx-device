@@ -62,7 +62,7 @@ static void set_audio_bp() {
             qDebug() << "dsp fd closed";
           }
         } else {
-            qDeubu() << "qtopia_dsp NULL";
+            qDebug() << "qtopia_dsp NULL";
         }
 
         // open bp link
@@ -78,7 +78,7 @@ static void set_audio_ap() {
       if (phonefd != -1 ) {
         close(phonefd)          ;
         phonefd = -1;
-        qDdebug() << "close phonefd";
+        qDebug() << "close phonefd";
       }
 
 
