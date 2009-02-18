@@ -165,6 +165,9 @@ void EzxModemCallProvider::ringing
     // If we already announced an incoming call, then reset the
     // missed call timer but otherwise ignore this.  This prevents
     // us from creating a new incoming call for every new RING.
+    if (number.isEmpty() )
+      return;
+
     if ( incomingCall() ) {
         if ( hasRepeatingRings() )
             d->missedTimer->start( INCOMING_MISSED_TIMEOUT );
@@ -690,6 +693,7 @@ void EzxModemCallProvider::callNotification( const QString& msg )
     }  else if (  msg.startsWith( "BUSY:" ) ) {
       posn = 5;
       state = QPhoneCall::HangupRemote ;
+      atchat()->chat( "ATH" );
     } else if  ( msg.startsWith( "NO CARRIER:" )) {
       posn = 11;
       state =  QPhoneCall::HangupRemote;
@@ -699,25 +703,11 @@ void EzxModemCallProvider::callNotification( const QString& msg )
     if (posn) {
       uint identifier = QAtUtils::parseNumber( msg, posn );
       QModemCall *call = callForIdentifier( identifier );
-      if (call)
+
+      if (call) 
         call->setState( state );
-
-      // FIXME: more then one call
-      if (state == QPhoneCall::HangupRemote)
-         atchat()->chat( "ATH" );
-
-    }   else if ( msg.startsWith( "NO CARRIER" ) ||
-       msg.startsWith( "NO ANSWER" ) ||
-       msg.startsWith( "NO DIALTONE" ) ||
-       msg.startsWith( "BUSY" ) ) {
-
-
-      // Foreground call was aborted by remote side or network error.
-      if ( !d->hangupTimer->isActive() ) {
-          hangupRemote( 0 );
-      }
-
-    }
+      
+    }   
 }
 
 void EzxModemCallProvider::clip( const QString& msg )
