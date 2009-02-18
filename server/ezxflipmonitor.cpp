@@ -1,6 +1,7 @@
 #include <qtopialog.h>
 #include <windowmanagement.h>
 #include <qtopiaserverapplication.h>
+#include <QtopiaChannel>
 
 #include "ezxflipscreen.h"
 #include "ezxflipmonitor.h"
@@ -55,6 +56,7 @@ void EzxFlipMonitor::updateFlipScreenState()
     qLog() << "EzxFlipMonitor: Flip opened";
     scr->hide();
     keyLockVso.setAttribute("KeyLock", false);
+    QtopiaChannel::send("QPE/APM", "full()"); 
   }
   else
   {

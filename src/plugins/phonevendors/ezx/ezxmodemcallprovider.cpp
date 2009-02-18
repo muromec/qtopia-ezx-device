@@ -18,7 +18,7 @@
 #include <qtopiaphonemodem/private/qmodempppdmanager_p.h>
 #include <qtopialog.h>
 #include <qtimer.h>
-#include <QtopiaServiceRequest>
+#include <QtopiaChannel>
 
 #include "stdio.h"
 /*!
@@ -174,10 +174,7 @@ void EzxModemCallProvider::ringing
         return;
     }
 
-    qLog(Modem) << "Incoming call! HighPerf!";
-    QtopiaServiceRequest req("APM", "requestHighPerformance(QString)");
-    req << "Incoming Call";
-    req.send();
+    QtopiaChannel::send("QPE/APM", "full()");
 
     // Record the new information that we got.
     if ( !number.isEmpty() )

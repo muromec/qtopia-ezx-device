@@ -7,6 +7,8 @@
 #include <systemsuspend.h>
 #include <QtopiaAbstractService>
 #include <QSet>
+#include <QtopiaChannel>
+
 class QSocketNotifier;
 
 class EzxAPM: public SystemSuspendHandler
@@ -25,6 +27,7 @@ class EzxAPM: public SystemSuspendHandler
 
   private slots:
     void apmEvent(int fd);
+    void ipcEvent(const QString &msg, const QByteArray &arg);
 
   private:
     void adjustPower(int load = -1);
@@ -55,12 +58,14 @@ class EzxAPM: public SystemSuspendHandler
     bool allow_high_perf;
 
     QValueSpaceObject vso;
+    QtopiaChannel *ipc;
 
     static const struct ipm_config power_profiles[];
     static const int n_profiles;
     static const int n_profiles_low;
     static const int n_profiles_high;
     friend class EzxAPMService;
+    EzxAPMService *service;
 };
 
 class EzxAPMService: public QtopiaAbstractService

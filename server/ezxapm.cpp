@@ -84,8 +84,15 @@ EzxAPM::EzxAPM(QObject *parent)
   vso.setAttribute("TimeSleptString", QString("0:00"));
   // CPU/Clock is initialised in setPowerProfile()
 
-  EzxAPMService *service = new EzxAPMService(this);
-  (void)service;
+  service = new EzxAPMService(this);
+
+  ipc = new QtopiaChannel("QPE/APM", this);
+  connect( 
+    ipc,  SIGNAL(received(QString,QByteArray)),
+    this, SLOT(ipcEvent(QString,QByteArray)) 
+  );
+
+
 }
 
 EzxAPM::~EzxAPM()
@@ -163,6 +170,14 @@ void EzxAPM::apmEvent(int)
   }
 
   startPMU();
+}
+
+void EzxAPM::ipcEvent(const QString &msg, const QByteArray &arg) {
+
+  if (msg == "full()") {
+    qLog(Hardware) << "full power!!!!!";
+    service->requestHighPerformance("apm");
+  }
 }
 
 void EzxAPM::sleep()
