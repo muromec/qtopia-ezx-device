@@ -1,7 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2000-2008 TROLLTECH ASA. All rights reserved.
-** Copyright (C) 2008 Ilya Petrov <ilya.muromec@gmail.com>
+** Copyright (C) 2008-2009 Ilya Petrov <ilya.muromec@gmail.com>
 **
 ** This file is part of the Opensource Edition of the Qtopia Toolkit.
 **
@@ -204,7 +204,7 @@ void EZXKbdHandler::readKbdData()
         
         case 0x17: qtKeyCode = Qt::Key_F32; break; // browser
         case 0x2d:
-        case 0x2f: qtKeyCode = Qt::Key_F3; // player launch
+        case 0x2f: qtKeyCode = Qt::Key_F3; break; // player launch
         case 0x2c: qtKeyCode = Qt::Key_F33; break; // play
         case 0x2a: qtKeyCode = Qt::Key_F34; break; // prev
         case 0x2b: qtKeyCode = Qt::Key_F35 ; break; // next
