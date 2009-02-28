@@ -198,6 +198,7 @@ void EZXKbdHandler::readKbdData()
         case 0x1b: qtKeyCode = Qt::Key_Flip; break;
 
         // headphone 
+        case 0x29:
         case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
 
         case 0x2e: qtKeyCode = Qt::Key_F29; break; // E6 lockswitch
