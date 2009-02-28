@@ -1,35 +1,37 @@
 **** Qtopia profile for ezx devices ****
 
-Tested on motorola a1200 only
+Tested on motorola a1200, E6, E2, works on legacy 2.4.20_mvlcee31
 
 Implemets:
 
-- basic telephony on ezx phones (*t)
-- keyboard driver and keymap (tested on A1200 only)
-- battary status (*t)
+- telephony (AT) on ezx gen2 phones
+- camera interface
+- audio devices handler
+- keyboard driver and keymap
+- battary status 
 - lcd backlight control
 - qmake specs
 
-*t: using motorola proprietary  modem daemon "tapisrv" with disabled security
-    system
-
 Usage:
 
-/somepath/qtopia-opensource-4.3.1/configure -device ezx -Ipath_to_headers -Lpat_to_libs
+/somepath/qtopia-opensource/configure -device ezx 
 make 
 make IMAGE=somepath/image install
-# libsqlite workarround:
-cd src/3rdparty/libraries/sqlite
+# packagemanager workarround:
+cd src/settings/packagemanager
 sed 's,-Os,-O0,g' -i Makefile.target
 make clean 
 make IMAGE=somepath/image install
 
-Required headers:
+Required headers from motorola kernel:
 
-
-linux/soundcard.h (from motorola released kernel)
-
-Required libs: libezxtapi.so (download from phone)
+linux/soundcard.h 
+linux/accy.h 
+linux/apm_bios.h
+linux/power_ic.h
+linux/pcap_rtc.h 
+linux/ezxusbd.h
+linux/fb.h
 
 Also requires dbus, bluez and tslib to build and work.
 
@@ -43,18 +45,23 @@ Run dbus-daemon --system
 Run hcid
 
 Kill motorola native interface:
-kill $(pidof am windowsserver misc1 soundmanager)
+kill $(pidof tapisrv am windowsserver misc1 soundmanager)
 
 Run qpe:
 export PATH=/ezxlocal/Qtopia/bin/:$PATH
 export QWS_MOUSE_PROTO="Tslib"
 export TSLIB_TSDEVICE=/dev/touchscreen/ucb1x00
 export QWS_KEYBOARD=ezxkbdhandler
-export QTOPIA_PHONE_DEVICE="/dev/null:115200"
+export QTOPIA_PHONE_DEVICE="/dev/mux0:115200"
 export QTOPIA_PHONE_VENDOR=ezx
 
 
-qpe -qws & mediaserver -noshow
+qpe -qws 
+
+*** Binary builds ***
+
+Full firmware here: http://ezxdev.org/qtopia/firmwares/
+Recent qtopia builds: http://ezxdev.org/qtopia/autobuild/
 
 
-Test, send bug reports and patches
+Test, send bug reports and patches here: http://code.google.com/p/qtopia-ezx/issues/list
