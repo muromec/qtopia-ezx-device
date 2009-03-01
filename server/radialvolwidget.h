@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QTimeLine>
 
+class AudioVolumeManager;
 struct RadialVolumeWidgetPrivate;
 
 class RadialVolumeWidget: public QWidget
@@ -12,6 +13,8 @@ class RadialVolumeWidget: public QWidget
   public:
     RadialVolumeWidget(QWidget *parent = NULL);
     virtual ~RadialVolumeWidget();
+  signals:
+    void volumeChanged(int volume);
   public slots:
     void stepUp();
     void stepDown();
@@ -23,6 +26,7 @@ class RadialVolumeWidget: public QWidget
     void resizeEvent(QResizeEvent *event);
   private:
     RadialVolumeWidgetPrivate *d;
+    AudioVolumeManager *manager;
 };
 
 #endif // _FLIPVOLWIDGET_H_

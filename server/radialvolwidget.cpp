@@ -10,6 +10,8 @@
 #include <qtopialog.h>
 
 #include "radialvolwidget.h"
+#include "audiovolumemanager.h"
+
 
 struct RadialVolumeWidgetPrivate
 {
@@ -71,9 +73,11 @@ void RadialVolumeWidgetPrivate::paintBackground() // QGradient is soooo sloooow
 //-------------------
 
 RadialVolumeWidget::RadialVolumeWidget(QWidget *parent)
-  : QWidget(parent), d(new RadialVolumeWidgetPrivate(this))
+  : QWidget(parent), d(new RadialVolumeWidgetPrivate(this)), manager(new AudioVolumeManager())
 {
   qLog() << "RadialVolumeWidget";
+  connect(this,SIGNAL(volumeChanged(int)),
+      manager, SLOT(setVolume(int)) );
 
   d->level = 0;
 }
@@ -88,6 +92,7 @@ void RadialVolumeWidget::stepDown()
   showControl();
   if (d->level>0)
     d->level--;
+  emit volumeChanged(d->level*20);
   update();
 }
 
@@ -97,6 +102,7 @@ void RadialVolumeWidget::stepUp()
   showControl();
   if (d->level<n_levels-1)
     d->level++;
+  emit volumeChanged(d->level*20);
   update();
 }
 
