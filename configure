@@ -3,7 +3,7 @@
 -arch arm 
 -no-qvfb
 -displaysize 240x320
--prefix /ezxlocal/Qtopia
+-prefix /opt
 -launch-method quicklaunch
 -font DejaVuSans.ttf
 -qtopiamedia
