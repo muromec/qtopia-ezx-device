@@ -45,6 +45,4 @@
 #define V4L_VIDEO_DEVICE            "/dev/video0" 
 #endif
 
-#define QTOPIA_ZONEINFO_PATH "/ezxlocal/Qtopia/zoneinfo/"
-
 #define NO_WIRELESS_LAN
