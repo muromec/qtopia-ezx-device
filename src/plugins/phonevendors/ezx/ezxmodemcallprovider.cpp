@@ -175,6 +175,7 @@ void EzxModemCallProvider::ringing
     }
 
     QtopiaChannel::send("QPE/APM", "full()");
+    QtopiaChannel::send("QPE/FlipScreen", "hide()");
 
     // Record the new information that we got.
     if ( !number.isEmpty() )

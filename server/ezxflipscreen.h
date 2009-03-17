@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <ThemedView>
+#include <QtopiaChannel>
 
 class EzxFlipScreen: public ThemedView
 {
@@ -19,6 +20,12 @@ class EzxFlipScreen: public ThemedView
     void volumeUp();
     void volumeDown();
     void showMenu();
+  private slots:
+    void ipcEvent(const QString &msg, const QByteArray &arg);
+  private:
+    QtopiaChannel *ipc;
+
+
 };
 
 #endif // _EZXFLIPSCREEN_H_

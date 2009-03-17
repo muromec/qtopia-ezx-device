@@ -4,10 +4,19 @@
 #include <qtopialog.h>
 #include "themecontrol.h"
 
+#include <QtopiaIpcEnvelope>
+
 EzxFlipScreen::EzxFlipScreen(QWidget *parent)
   : ThemedView(parent)
 {
   ThemeControl::instance()->registerThemedView(this, "ClosedFlipScreen");
+
+  ipc = new QtopiaChannel("QPE/FlipScreen", this);
+  connect(
+    ipc,  SIGNAL(received(QString,QByteArray)),
+    this, SLOT(ipcEvent(QString,QByteArray))
+  );
+
 }
 
 EzxFlipScreen::~EzxFlipScreen()
@@ -44,3 +53,10 @@ void EzxFlipScreen::showMenu()
 {
 }
 
+void EzxFlipScreen::ipcEvent(const QString &msg, const QByteArray &arg) 
+{
+  if (msg == "hide()") {
+    qLog(Hardware) << "hide flip";
+    hide();
+  }
+}
