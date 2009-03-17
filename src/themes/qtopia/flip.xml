@@ -1,12 +1,48 @@
 <?xml version="1.0"?>
-<page xmlns="http://www.trolltech.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.trolltech.com themedview.xsd" name="ezxflipscreen" base="themes/qtopia">
+<page xmlns="http://www.trolltech.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.trolltech.com themedview.xsd" name="ezxflipscreen" base="themes/smart">
+
   <group name="background">
     <image name="background" rect="0,0,0x0" src="ladybug" scale="yes"/>
     <plugin name="bgplugin"/>
   </group>
+
+  <level rect="10,110,100x30" name="battery" src="battery-big.svg"
+    count="6" min="0" max="100" scale="yes" delay="1000" loop="0"
+    play="expr:@/Hardware/Accessories/QPowerSource/DefaultBattery/Charging == true">
+      expr:@/Hardware/Accessories/QPowerSource/DefaultBattery/Charge
+  </level>
+
+  <level rect="130,110,100x30" name="battery" src="signal-big.svg"
+    count="6" min="0" max="100" scale="yes" delay="1000" loop="0"
+    active="expr:@/Hardware/Accessories/QSignalSource/DefaultSignal/SignalStrength">
+      expr:@/Hardware/Accessories/QSignalSource/DefaultSignal/SignalStrength
+  </level>
+
+
   <text name="datetime" rect="0,10%,0x30pt" align="hcenter,vcenter" short ="yes" size="30" bold="yes" outline="#111111" color="#ffffff">
-        expr:@/UI/DisplayTime/Time                                        
-    </text>
+    expr:@/UI/DisplayTime/Time
+  </text>
+
+        <text name="date" rect="0,27%,0x14pt" size="10" align="hcenter,vcenter" bold="yes" outline="#111111" color="#ffffff">
+            expr:@/UI/DisplayTime/Date
+        </text>
+
+    <exclusive>
+        <group rect="20%,55%,0x32" transient="yes" active="expr:@/Communications/Calls/MissedCalls > 0 || @/Communications/Messages/NewMessages > 0">
+            <rect name="calls" rect="0,0,50%x0" color="None" brush="None" transient="yes" active="expr:@/Communications/Calls/MissedCalls > 0">
+                <image rect="0,0,32x32" src="call" scale="yes"/>
+                <text name="calls" size="20" rect="32,1,-1,-1" bold="yes" align="left,vcenter" outline="#eeeeee">
+                    expr:@/Communications/Calls/MissedCalls
+                </text>
+            </rect>
+            <rect name="messages" rect="20%,0,50%x0" color="None" brush="None" transient="yes" active="expr:@/Communications/Messages/NewMessages > 0">
+                <text name="messages" size="20" rect="0,1,-32,-1" bold="yes" align="right,vcenter" outline="#eeeeee">
+                    expr:@/Communications/Messages/NewMessages
+                </text>
+                <image rect="-26,0,32x32" src="message" scale="yes"/>
+            </rect>
+        </group>
+    </exclusive>
   
   <widget name="VolumeControl" rect="0,135,240x300" align="hcenter,vcenter" interactive="yes"/> 
   
