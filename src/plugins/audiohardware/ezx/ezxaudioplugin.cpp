@@ -336,6 +336,7 @@ bool SpeakerAudioState::isAvailable() const
 bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
 
+  /*
     if (m_isPhone) {
         return set_audio_mode(EARPIECE_OUT,HANDSET_INPUT,true);
         
@@ -343,6 +344,8 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
         return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,false);
 
     }
+    */
+  return true;
         
 
         
@@ -430,6 +433,7 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 {
     Q_UNUSED(capability)
 
+      /*
     int in, out;
     switch ( headType ) {
 
@@ -472,6 +476,8 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
           break;
     }
     return set_audio_mode(out,in,m_isPhone);
+    */
+      return true;
 
 
 
@@ -528,7 +534,8 @@ bool SpeakerphoneAudioState::isAvailable() const
 
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
-    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,true);
+  return true;
+//    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,true);
 }
 
 bool SpeakerphoneAudioState::leave()

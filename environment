@@ -1,5 +1,5 @@
 #!/bin/sh
-TOOLCHAIN=/opt/toolchains/arm-iwmmxt-linux-gnu
+TOOLCHAIN=/opt/toolchains/arm-eabi
 export PKG_CONFIG_PREFIX=$TOOLCHAIN/stage
 export PKG_CONFIG_PATH=$PKG_CONFIG_PREFIX/lib/pkgconfig:$TOOLCHAIN/gst/lib/pkgconfig
 

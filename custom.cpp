@@ -17,25 +17,20 @@
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <unistd.h>
+#include <qdebug.h>
 
-
-#define FRAMEBUFFER_DEVICE "/dev/fb0"
-#define KEYLIGHT_DEVICE "/dev/keylight"
-
-#define PWMLED_0_ON             0xf0
-#define PWMLED_0_OFF            0xf2
-#define FRAMEBUFFER_DIM 11
-#define FRAMEBUFFER_MAX 100
 
 bool fb_disp_on;
 
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {
-    return FRAMEBUFFER_MAX;
+    return 1024;
 }
 
 QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 {
+  qDebug() << "nonimplemented: custom.cpp, qpe_setBrightness" << b;
+  /*
   int fbh, kbh, kbvalue;
   int ret;
 
@@ -76,6 +71,7 @@ QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 
   close(fbh);
   close(kbh);
+  */
 
 }
 

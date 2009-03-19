@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define CONFIG_ARCH_EZX
-#include <linux/pcap_rtc.h>
 
 #include "time_utils.h"
 
@@ -21,7 +19,7 @@ void Time::save()
 
   // write time to pcap
   int pcap_rtc = open("/dev/pcap_rtc", O_RDWR);
-  ioctl(pcap_rtc, PCAP_RTC_IOC_SET_TIME, &tv);
+  ioctl(pcap_rtc, POWER_IC_IOCTL_SET_TIME, &tv);
   close(pcap_rtc);
 }
 
@@ -35,13 +33,13 @@ void Time::load()
 
   // read time from pcap
   int pcap_rtc = open("/dev/pcap_rtc", O_RDWR);
-  int ret = ioctl(pcap_rtc, PCAP_RTC_IOC_GET_TIME, &tv);
+  int ret = ioctl(pcap_rtc, POWER_IC_IOCTL_GET_TIME, &tv);
   close(pcap_rtc);
 
   if (!ret)
     settimeofday(&tv,&tz); // set system time
-  //else
-    //err("Agggrrhhh... PCAP_RTC_IOC_GET_TIME failed");
+  else
+    err("Agggrrhhh... POWER_IC_IOCTL_GET_TIME failed");
 }
 
 int Time::currentStamp()

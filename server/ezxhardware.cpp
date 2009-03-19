@@ -120,10 +120,10 @@ void EzxHardware::checkAccesories()
   ioctl(accy_fd, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &accys);
   while (accys)
   {
-    int n = generic_ffs(accys) - 1;
+    int n = ACCY_BITMASK_FFS(accys);
     plugAccesory(n);
 
-    accys &= ~(1 << (n));
+    ACCY_BITMASK_CLEAR(accys, n);
   }
 }
 

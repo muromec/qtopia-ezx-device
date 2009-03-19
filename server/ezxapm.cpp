@@ -28,6 +28,7 @@
 QTOPIA_TASK(EzxAPM, EzxAPM);
 QTOPIA_TASK_PROVIDES(EzxAPM, SystemSuspendHandler);
 
+/*
 // EzxAPM power profiles; greater index gives more power
 const ipm_config EzxAPM::power_profiles[] =
 {
@@ -45,9 +46,11 @@ const ipm_config EzxAPM::power_profiles[] =
   {520000,         1450,           5,        1,             1,       208000,       208000,   208000, -1}, // HIGH
 //{624000,         1500,           6,        1,             1,       208000,       208000,   104000, -1}  // HIGH
 };
+
 const int EzxAPM::n_profiles = sizeof(power_profiles)/sizeof(ipm_config);
 const int EzxAPM::n_profiles_low = 2; // First n_profiles_low profiles are marked as LOW performance
 const int EzxAPM::n_profiles_high = 1; // Last n_profiles_high profiles are marked as HIGH performance
+*/
 // Assumed that n_profiles_low<nprofiles, n_profiles_high<nprofiles
 /*
   MID performance profiles are always available
@@ -62,6 +65,7 @@ EzxAPM::EzxAPM(QObject *parent)
   allow_low_perf(false), allow_high_perf(true),
   vso("/Hardware/EZX/APM", this)
 {
+  /*
   apm_fd = ::open("/dev/apm_bios", O_RDWR);
   if (apm_fd<0)
     qLog(Hardware) << "Error: could not open apm_bios";
@@ -91,18 +95,22 @@ EzxAPM::EzxAPM(QObject *parent)
     ipc,  SIGNAL(received(QString,QByteArray)),
     this, SLOT(ipcEvent(QString,QByteArray)) 
   );
+  */
 
 
 }
 
 EzxAPM::~EzxAPM()
 {
+  /*
   if (apm_fd>=0)
   ::close(apm_fd);
+  */
 }
 
 void EzxAPM::apmEvent(int)
 {
+  /*
   apm_event_t apm_event;
   ::read(apm_fd, &apm_event, sizeof(apm_event));
 
@@ -170,18 +178,22 @@ void EzxAPM::apmEvent(int)
   }
 
   startPMU();
+  */
 }
 
 void EzxAPM::ipcEvent(const QString &msg, const QByteArray &arg) {
 
+  /*
   if (msg == "full()") {
     qLog(Hardware) << "full power!!!!!";
     service->requestHighPerformance("apm");
   }
+  */
 }
 
 void EzxAPM::sleep()
 {
+  /*
   qLog(Hardware) << "Going to sleep";
 
   int sleep_time = Time::currentStamp();
@@ -202,28 +214,30 @@ void EzxAPM::sleep()
   char tmp[16];
   sprintf(tmp, "%d:%02d", total_slept_time/60, total_slept_time%60);
   vso.setAttribute("TimeSleptString", QString(tmp));
+  */
 }
 
 void EzxAPM::startPMU()
 {
-  ioctl(apm_fd, APM_IOC_STARTPMU, NULL);
+  //ioctl(apm_fd, APM_IOC_STARTPMU, NULL);
 }
 
 // CPU power profiles management
 void EzxAPM::gearUp()
 {
-  if (current_profile<n_profiles-1 && (allow_high_perf || current_profile<n_profiles-1-n_profiles_high))
-    setPowerProfile(current_profile+1);
+  //if (current_profile<n_profiles-1 && (allow_high_perf || current_profile<n_profiles-1-n_profiles_high))
+  //  setPowerProfile(current_profile+1);
 }
 
 void EzxAPM::gearDown()
 {
-  if (current_profile>0 && (allow_low_perf || current_profile>n_profiles_low))
-    setPowerProfile(current_profile-1);
+ // if (current_profile>0 && (allow_low_perf || current_profile>n_profiles_low))
+ //   setPowerProfile(current_profile-1);
 }
 
 void EzxAPM::setPowerProfile(int n)
 {
+  /*
   ipm_config cconf;
   int ret = ::ioctl(apm_fd, APM_IOC_GET_IPM_CONFIG, &cconf);
   ret = ::ioctl(apm_fd, APM_IOC_SET_IPM_CONFIG, &power_profiles[n]);
@@ -236,10 +250,12 @@ void EzxAPM::setPowerProfile(int n)
 
   current_profile = n;
   load_balance = 0; // reset it to avoid confusing logic
+  */
 }
 
 void EzxAPM::adjustPower(int load)
 {
+  /*
   if (!perf_locks.empty()) // Need high performance
   {
     if (current_profile<n_profiles-1)
@@ -276,6 +292,7 @@ void EzxAPM::adjustPower(int load)
       else if (load_balance < -MAX_LOAD_BALANCE)
         gearDown();
   }
+  */
 }
 
 // SystemSuspendHandler
