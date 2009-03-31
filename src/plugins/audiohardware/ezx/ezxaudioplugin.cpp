@@ -39,9 +39,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#include "linux/soundcard.h"
-#include "linux/moto_accy.h"
-
 #include <dirent.h>
 #include <stdio.h>
 
@@ -49,67 +46,90 @@
 
 #include <qaudiooutput.h>
 
-int phonefd = -1;
+snd_mixer_t *mixerFd;
 
-static void set_audio_bp() {
-
-
-        // if dsp opened
-        if (qtopia_dsp != NULL) {
-          if (*qtopia_dsp > 0) {
-            close(*qtopia_dsp);
-            *qtopia_dsp = -2;
-            qDebug() << "dsp fd closed";
-          }
-        } else {
-            qDebug() << "qtopia_dsp NULL";
-        }
-
-        // open bp link
-        if (phonefd <= 0) {
-          usleep(600000);
-          phonefd = open("/dev/phone",O_RDONLY);
-          qDebug() << "phone fd opened" << phonefd;
-        } 
+int initMixer()
+{
+    int result;
+  if ((result = snd_mixer_open( &mixerFd, 0)) < 0) {
+        printf("sucks1!\n");
+        mixerFd = NULL;
+        return result;
+    }
+    
+    if ((result = snd_mixer_attach( mixerFd, "default")) < 0) {
+        printf("snd_mixer_attach error");
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    if ((result = snd_mixer_selem_register( mixerFd, NULL, NULL)) < 0) {
+        printf("snd_mixer_selem_register error");
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    if ((result = snd_mixer_load( mixerFd)) < 0) {
+        printf("snd_mixer_load error");
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    return result;
+}
+int closeMixer()
+{
+     int result = snd_mixer_detach( mixerFd, "default" );
+     result = snd_mixer_close( mixerFd );
+    return 0;
+ 
 }
 
-static void set_audio_ap() {
-      // close phonefd
-      if (phonefd != -1 ) {
-        close(phonefd)          ;
-        phonefd = -1;
-        qDebug() << "close phonefd";
+void select_item(char *elem_name, char *item) {
+
+
+  int n =0;
+  snd_mixer_elem_t *elem; 
+  for ( elem = snd_mixer_first_elem( mixerFd); elem; elem = snd_mixer_elem_next( elem) ) {
+
+      if (strcmp(elem_name,snd_mixer_selem_get_name( elem)))
+        continue;
+
+      int it;
+      char name[255]; 
+
+      for (it=0; it<snd_mixer_selem_get_enum_items (elem); it++) {
+        snd_mixer_selem_get_enum_item_name (elem,it,255,name);
+
+        if (! strcmp(item,name)) 
+          break;
+
       }
 
+      snd_mixer_selem_set_enum_item(elem,SND_MIXER_SCHN_MONO,it);
 
-      if (qtopia_dsp != NULL) {
-          if (*qtopia_dsp == -2) {
-             *qtopia_dsp  = ::open( "/dev/dsp", O_WRONLY ) ;
-             qDebug() << "dsp fd restored" << *qtopia_dsp ;
-          }
-          
-      } 
+      break;
+
+  }
+
+
 }
 
-static inline bool set_audio_mode(int mode, int recmode,bool bp)
+static inline bool set_audio_mode(char *path, bool bp)
 {
 
+    initMixer();
+
     if (bp)
-      set_audio_bp();
+      select_item("DAI Select","BP");
     else
-      set_audio_ap();
+      select_item("DAI Select","Stereo");
 
-    int mixerFd = ::open("/dev/mixer", O_RDWR);
+    select_item("Output mode",path);
 
-    if (mixerFd >= 0) {
-        ::ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OUTSRC), &mode    );
-        ::ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_RECSRC), &recmode );
-        ::close(mixerFd);
-        return true;
-    }
+    closeMixer();
 
-    qWarning("Setting audio mode to: %d failed", mode);
-    return false;
+    return true;
 }
 
 
@@ -336,15 +356,7 @@ bool SpeakerAudioState::isAvailable() const
 bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
 
-    if (m_isPhone) {
-        return set_audio_mode(EARPIECE_OUT,HANDSET_INPUT,true);
-        
-    } else { 
-        return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,false);
-
-    }
-        
-
+    return set_audio_mode("Earpiece",m_isPhone);
         
 }
 
@@ -429,7 +441,7 @@ bool HeadphonesAudioState::isAvailable() const
 bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 {
     Q_UNUSED(capability)
-
+/*
     int in, out;
     switch ( headType ) {
 
@@ -472,7 +484,9 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
           break;
     }
     return set_audio_mode(out,in,m_isPhone);
+*/
 
+    return set_audio_mode("Headset",m_isPhone);
 
 
 }
@@ -528,7 +542,7 @@ bool SpeakerphoneAudioState::isAvailable() const
 
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
-    return set_audio_mode(LOUDERSPEAKER_OUT,HANDSET_INPUT,true);
+    return set_audio_mode("Loudspeaker",true);
 }
 
 bool SpeakerphoneAudioState::leave()

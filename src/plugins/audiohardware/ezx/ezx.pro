@@ -8,3 +8,5 @@ depends(libraries/qtopiaaudio)
 enable_bluetooth {
     depends(libraries/qtopiacomm)
 }
+
+LIBS += -lasound

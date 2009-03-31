@@ -24,6 +24,14 @@
 
 #include <QAudioStatePlugin>
 
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/soundcard.h>
+#include <alsa/asoundlib.h>
+
+
 class EZXAudioPluginPrivate;
 
 class EZXAudioPlugin : public QAudioStatePlugin
@@ -39,6 +47,12 @@ public:
 
 private:
     EZXAudioPluginPrivate *m_data;
+
+    int initMixer;
+    int closeMixer;
+    void select_item(char *elem_name, char *item);
+
+
 };
 
 #endif
