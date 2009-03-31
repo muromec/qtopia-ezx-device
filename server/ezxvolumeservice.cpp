@@ -22,7 +22,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <linux/soundcard.h>
 
 #include <QTimer>
 
@@ -112,6 +111,7 @@ void EzxVolumeService::setCallDomain()
 
 void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustType adjust)
 {
+  /*
     int mixerFd = open("/dev/mixer", O_RDWR);
     if (mixerFd >= 0) {
         int leftright, left, right;
@@ -137,6 +137,7 @@ void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustTyp
         ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &input);
         close(mixerFd);
     }
+    */
 }
 
 QTOPIA_TASK(EzxVolumeService, EzxVolumeService);
