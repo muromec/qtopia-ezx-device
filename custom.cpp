@@ -10,72 +10,66 @@
 **
 ****************************************************************************/
 
-#include <qtopianamespace.h>
 #include <custom.h>
+#include <qtopianamespace.h>
+#include <QtopiaServiceRequest>
+#include <QtopiaIpcEnvelope>
 
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/fb.h>
-#include <unistd.h>
+#include <qwindowsystem_qws.h>
+#include <QValueSpaceItem>
+#include <QValueSpaceObject>
+#include <stdio.h>
+#include <stdlib.h>
+#include <QProcess>
+#include <QFile>
+#include <QFileInfo>
 
+#include <QTextStream>
+#include <QDebug>
 
-#define FRAMEBUFFER_DEVICE "/dev/fb0"
-#define KEYLIGHT_DEVICE "/dev/keylight"
-
-#define PWMLED_0_ON             0xf0
-#define PWMLED_0_OFF            0xf2
-#define FRAMEBUFFER_DIM 11
-#define FRAMEBUFFER_MAX 100
-
-bool fb_disp_on;
+#define BL "/sys/class/backlight/pwm-backlight/"
 
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {
-    return FRAMEBUFFER_MAX;
+    QFile maxBrightness;
+    QString strvalue;
+    maxBrightness.setFileName(BL "max_brightness");
+
+    if(!maxBrightness.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning()<<"Bl file not opened";
+    } else {
+        QTextStream in(&maxBrightness);
+        in >> strvalue;
+        maxBrightness.close();
+    }
+    return  strvalue.toInt();
 }
 
 QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 {
-  int fbh, kbh, kbvalue;
-  int ret;
+    char cmd[80];
 
-  fbh = open(FRAMEBUFFER_DEVICE, O_RDWR); // lcd
-  kbh = open(KEYLIGHT_DEVICE,    O_RDWR); // keyboard
+    int brightessSteps = qpe_sysBrightnessSteps();
+    if(b > brightessSteps)
+        b = brightessSteps;
 
-
-  if (b) {
-
-    kbvalue = PWMLED_0_ON;
-
-    if (b > FRAMEBUFFER_MAX) { // normalize
-      b = FRAMEBUFFER_MAX ;
-    } else if (b == 1) { // dim
-      b = FRAMEBUFFER_DIM;
-      kbvalue = PWMLED_0_OFF;
-    } 
-
-    // if no power - set it
-    if (! fb_disp_on ) { 
-      ret = ioctl(fbh, FBIOBLANK, VESA_NO_BLANKING);
-      ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_ON);
-
-      fb_disp_on = true;
+    if(b == 1) {
+        // dim
+        b = brightessSteps / 4;
+    } else if (b == -1) {
+        //bright
+        b = brightessSteps;
     }
-  } else {
-    kbvalue = PWMLED_0_OFF;
 
-    // power down lcd to save power
-    ret = ioctl(fbh, FBIOSETBKLIGHT, BKLIGHT_OFF);
-    ret = ioctl(fbh, FBIOBLANK, VESA_POWERDOWN);
+    QFile brightness;
+    brightness.setFileName(BL "brightness");
 
-    fb_disp_on = false;
-  }
-
-  ret = ioctl(fbh, FBIOSETBRIGHTNESS, b);
-  ret = ioctl(kbh, kbvalue, 1);
-
-  close(fbh);
-  close(kbh);
-
+    if(!brightness.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        qWarning()<<"Bl File not opened";
+    } else {
+        QTextStream out(&brightness);
+        out << QString::number(b);
+        brightness.close();
+    }
 }
 
