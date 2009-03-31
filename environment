@@ -1,5 +1,5 @@
 #!/bin/sh
-TOOLCHAIN=/opt/toolchains/arm-iwmmxt-linux-gnu
+TOOLCHAIN=/usr/local/angstrom/arm/
 export PKG_CONFIG_PREFIX=$TOOLCHAIN/stage
-export PKG_CONFIG_PATH=$PKG_CONFIG_PREFIX/lib/pkgconfig:$TOOLCHAIN/gst/lib/pkgconfig
+export PKG_CONFIG_PATH=$PKG_CONFIG_PREFIX/lib/pkgconfig
 
