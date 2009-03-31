@@ -1,7 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2000-2008 TROLLTECH ASA. All rights reserved.
-** Copyright (C) 2008-2009 Ilya Petrov <ilya.muromec@gmail.com>
+** Copyright (C) 2008 Ilya Petrov <ilya.muromec@gmail.com>
 **
 ** This file is part of the Opensource Edition of the Qtopia Toolkit.
 **
@@ -44,11 +44,20 @@
 #include <sys/vt.h>
 #include <sys/kd.h>
 
+#include <linux/input.h>
+
 #define VTACQSIG SIGUSR1
 #define VTRELSIG SIGUSR2
 
 static int vtQws = 0;
 static unsigned int lastKey = -1;
+
+struct press_mode {
+  bool f_press;
+  bool f_auto;
+};
+
+static struct press_mode controlCodeMode[] = { {0,0},{1,0},{1,1} };
 
 EZXKbdHandler::EZXKbdHandler()
 {
@@ -56,85 +65,42 @@ EZXKbdHandler::EZXKbdHandler()
 
     setObjectName( "EZX Keypad Handler" );
 
-    kbdFD = ::open("/dev/keypad0", O_RDONLY | O_NDELAY, 0);
+    // normal pxa270 keyboard
+    kbdFD = ::open("/dev/input/event0", O_RDONLY | O_NDELAY, 0);
     if (kbdFD >= 0)
     {
-        qLog(Input) << "Opened /dev/keypad0 as keypad input";
-        m_notify = new QSocketNotifier(kbdFD, QSocketNotifier::Read, this);
-        connect(m_notify, SIGNAL(activated(int)), this, SLOT(readKbdData()));
+        qLog(Input) << "Opened /dev/input/event0 as keypad input";
+        k_notify = new QSocketNotifier(kbdFD, QSocketNotifier::Read, this);
+        connect(k_notify, SIGNAL(activated(int)), this, SLOT(readKbd()));
     }
     else
     {
-        qWarning("Cannot open /dev/keypad0 for keypad (%s)", strerror(errno));
-        return;
+        qWarning("Cannot open keypad (%s)", strerror(errno));
     }
 
-    tcgetattr(kbdFD, &origTermData);
-    struct termios termdata;
-    tcgetattr(kbdFD, &termdata);
+    // separate device for red key handled via PCAP
+    pwrFD = ::open("/dev/input/event2", O_RDONLY | O_NDELAY, 0); 
+    if (pwrFD >= 0)
+    {
+      qLog(Input) << "Opened /dev/input/event2 as powerkey input"; 
+       p_notify = new QSocketNotifier(pwrFD, QSocketNotifier::Read, this);
+       connect(p_notify, SIGNAL(activated(int)), this, SLOT(readPwr()));  
+    }
 
-    ioctl(kbdFD, KDSKBMODE, K_RAW);
-
-    termdata.c_iflag = (IGNPAR | IGNBRK) & (~PARMRK) & (~ISTRIP);
-    termdata.c_oflag = 0;
-    termdata.c_cflag = CREAD | CS8;
-    termdata.c_lflag = 0;
-    termdata.c_cc[VTIME]=0;
-    termdata.c_cc[VMIN]=1;
-    cfsetispeed(&termdata, 9600);
-    cfsetospeed(&termdata, 9600);
-    tcsetattr(kbdFD, TCSANOW, &termdata);
-
-    connect(QApplication::instance(), SIGNAL(unixSignal(int)), this, SLOT(handleTtySwitch(int)));
-    QApplication::instance()->watchUnixSignal(VTACQSIG, true);
-    QApplication::instance()->watchUnixSignal(VTRELSIG, true);
-
-    struct vt_mode vtMode;
-    ioctl(kbdFD, VT_GETMODE, &vtMode);
-
-    // let us control VT switching
-    vtMode.mode = VT_PROCESS;
-    vtMode.relsig = VTRELSIG;
-    vtMode.acqsig = VTACQSIG;
-    ioctl(kbdFD, VT_SETMODE, &vtMode);
-
-    struct vt_stat vtStat;
-    ioctl(kbdFD, VT_GETSTATE, &vtStat);
-    vtQws = vtStat.v_active;
 
 }
 
 EZXKbdHandler::~EZXKbdHandler()
 {
     if (kbdFD >= 0)
-    {
-        ioctl(kbdFD, KDSKBMODE, K_XLATE);
-        tcsetattr(kbdFD, TCSANOW, &origTermData);
         ::close(kbdFD);
-    }
+
+    if (pwrFD >= 0)
+        ::close(pwrFD);
 }
 
-void EZXKbdHandler::handleTtySwitch(int sig)
-{
-    if (sig == VTACQSIG) {
-        if (ioctl(kbdFD, VT_RELDISP, VT_ACKACQ) == 0) {
-            qwsServer->enablePainting(true);
-            qt_screen->restore();
-            qwsServer->resumeMouse();
-            qwsServer->refresh();
-        }
-    } else if (sig == VTRELSIG) {
-        qwsServer->enablePainting(false);
-        qt_screen->save();
-        if(ioctl(kbdFD, VT_RELDISP, 1) == 0) {
-            qwsServer->suspendMouse();
-        } else {
-            qwsServer->enablePainting(true);
-        }
-    }
-}
 
-void EZXKbdHandler::readKbdData()
+void EZXKbdHandler::readData(int fd)
 {
     /*
      * Call:
@@ -159,55 +125,59 @@ void EZXKbdHandler::readKbdData()
      * Flip:
      * 1b: flip
     */
-    unsigned char           buf[2];
+    //unsigned char           buf[64];
+    struct input_event ev;
     unsigned int            qtKeyCode;
     Qt::KeyboardModifiers   modifiers = Qt::NoModifier;
 
-    int n = ::read(kbdFD, buf, 2);
+    int n = ::read(fd, &ev, sizeof(struct input_event) );
+    
+    if( (n != (int)sizeof(struct input_event)) || (!ev.type) )
+                  return;
 
-    unsigned short driverKeyCode   = (unsigned short)buf[0];
-    unsigned short controlCode     = (unsigned short)buf[1];
     unsigned short unicode         = 0xffff;
+    unsigned short isPress = controlCodeMode[ev.value].f_press;
+    unsigned short isAuto  = controlCodeMode[ev.value].f_auto;
+    
+    bool repeate;
 
-    bool repeate = false;
-    bool releaseOnly = false;
-
-    switch (driverKeyCode)
+    switch (ev.code)
     {
         
         // Navigation+
-        case 0x1c: qtKeyCode = Qt::Key_Call;   repeate = true; break;
-        case 0x1e: qtKeyCode = Qt::Key_Hangup; repeate = true; break;
+        case 0x66: qtKeyCode = Qt::Key_Call;   break; 
+        case 0x74: qtKeyCode = Qt::Key_Hangup;  break;
 
-        case 0x0c: qtKeyCode = Qt::Key_Up; break;
-        case 0x0d: qtKeyCode = Qt::Key_Down; break;
-        case 0x0e: qtKeyCode = Qt::Key_Left; break;
-        case 0x0f: qtKeyCode = Qt::Key_Right; break;
-        case 0x10: qtKeyCode = Qt::Key_Select; break;
+        case 0x67: qtKeyCode = Qt::Key_Up; break;
+        case 0x6c: qtKeyCode = Qt::Key_Down; break;
+        case 0x69: qtKeyCode = Qt::Key_Left; break;
+        case 0x6a: qtKeyCode = Qt::Key_Right; break;
+        case 0x60: qtKeyCode = Qt::Key_Select; break;
 
         // Keys on left hand side of device
-        case 0x25: qtKeyCode = Qt::Key_F30; break; // vol +
-        case 0x26: qtKeyCode = Qt::Key_F31; break; // vol -
-        case 0x27: qtKeyCode = Qt::Key_Select; break; 
+        case 0x68: qtKeyCode = Qt::Key_VolumeUp; break;
+        case 0x6d: qtKeyCode = Qt::Key_VolumeDown; break;
+        case 0x1c: qtKeyCode = Qt::Key_Select; break;
 
         // Keys on right hand side of device
-        case 0x19: qtKeyCode = Qt::Key_F4; break;
-        case 0x20: qtKeyCode = Qt::Key_F7; break;   // Key +
+        //case 0x00: qtKeyCode = Qt::Key_F4; break; // FIX KERNEL
+        case 0xa7: qtKeyCode = Qt::Key_F7; break;   // Key +
 
         // flip
-        case 0x1b: qtKeyCode = Qt::Key_Flip; break;
+        //case 0x1b: qtKeyCode = Qt::Key_Flip; break; // FIX KERNEL
 
-        // headphone 
+        // headphone FIX KERNEL for E2/E6
+        /*
         case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
 
-        case 0x2e: qtKeyCode = Qt::Key_F29; break; // E6 lockswitch
+        case 0x2e: qtKeyCode = Qt::Key_F29; break;
         
-        case 0x17: qtKeyCode = Qt::Key_F32; break; // browser
+        case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
         case 0x2d:
-        case 0x2f: qtKeyCode = Qt::Key_F3; break; // player launch
-        case 0x2c: qtKeyCode = Qt::Key_F33; break; // play
-        case 0x2a: qtKeyCode = Qt::Key_F34; break; // prev
-        case 0x2b: qtKeyCode = Qt::Key_F35 ; break; // next
+        case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
+        case 0x2c: qtKeyCode = Qt::Key_MediaPlay; break;
+        case 0x2a: qtKeyCode = Qt::Key_MediaPrevious; break;
+        case 0x2b: qtKeyCode = Qt::Key_MediaNext ; break;
 
         // numpad
         case 0x00: qtKeyCode = Qt::Key_0; unicode  = 0x30; break;
@@ -227,43 +197,23 @@ void EZXKbdHandler::readKbdData()
         case 0x13: qtKeyCode = Qt::Key_Back; break;
         case 0x12: qtKeyCode = Qt::Key_Context1; break;
 
-        case 0x16: qtKeyCode = Qt::Key_Clear; break;
+        case 0x16: qtKeyCode = Qt::Key_Clear; break;*/
 
 
         // unknown
-        printf("unknown key: %x control: %d\n",driverKeyCode,controlCode);
+        printf("unknown key: %x control: %d\n",ev.code,ev.value);
 
     }
 
-
-    // key is pressed
-    if (controlCode) {
-      if (repeate) {
-        // autorepeate handled by qtopia, start it
-        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
-        beginAutoRepeat(unicode, qtKeyCode, modifiers);
-        // save keycode in variable
-        lastKey = qtKeyCode;
-      } else if  (qtKeyCode != lastKey) {
-        // autorepeate handled by kernel. press
-        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
-        lastKey = qtKeyCode;
-      } else {
-        // autorepeate handled by kernel. hold
-        processKeyEvent(unicode, qtKeyCode, modifiers, true, true);
-      }
-    } else {
-      if (releaseOnly && (qtKeyCode != lastKey) ) 
-         // key sends only release event
-        processKeyEvent(unicode, qtKeyCode, modifiers, true, false);
-
-      // stop autorepeate, send release event and erase saved code
-      endAutoRepeat();
-      processKeyEvent(unicode, qtKeyCode, modifiers, false, false);
-
-      lastKey = -1;
-    }
+    processKeyEvent(unicode, qtKeyCode, modifiers, isPress, isAuto );
+    printf("%x %d %d\n",qtKeyCode, isPress, isAuto );
 
 }
 
+void EZXKbdHandler::readKbd() {
+  readData(kbdFD);
+}
 
+void EZXKbdHandler::readPwr() {
+  readData(pwrFD);
+}
