@@ -3,7 +3,7 @@
 -arch arm 
 -no-qvfb
 -displaysize 240x320
--prefix /ezxlocal/Qtopia
+-prefix /opt
 -launch-method quicklaunch
 -font DejaVuSans.ttf
 -qtopiamedia
@@ -34,9 +34,9 @@
 -release
 -no-samples
 -lrt
--sdk /opt/toolchains/arm-iwmmxt-linux-gnu/qtopia
--L/opt/toolchains/arm-iwmmxt-linux-gnu/stage/lib
--I/opt/toolchains/arm-iwmmxt-linux-gnu/stage/include
+-sdk /usr/local/angstrom/arm/qtopia
+-L/usr/local/angstrom/arm/stage/lib
+-I/usr/local/angstrom/arm/stage/include
 -system-sqlite
 
 
