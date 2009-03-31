@@ -6,10 +6,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define CONFIG_ARCH_EZX
-#include <linux/moto_accy.h>
-#include <linux/power_ic.h>
-
 #include <QPowerSourceProvider>
 #include <QSocketNotifier>
 #include <QFileMonitor>
@@ -17,17 +13,18 @@
 #include <qtopialog.h>
 
 #include "ezxhardware.h"
+#define ADC "/sys/devices/platform/pxa2xx-spi.1/spi1.0/"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
 
 EzxHardware::EzxHardware(QObject *parent)
   : QObject(parent),
-    fileMon("/proc/apm", QFileMonitor::Auto, this),
     battery(QPowerSource::Battery, "DefaultBattery", this),
     charger(QPowerSource::Wall, "Charger", this),
     vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
     vsoEzxHardware("/Hardware/EZX")
 {
+  /*
   accy_fd = open("/dev/accy", O_RDWR);
   if (accy_fd>=0)
   {
@@ -38,7 +35,11 @@ EzxHardware::EzxHardware(QObject *parent)
   else
     qLog(Hardware) << "Error: could not open accy";
 
-  connect(&fileMon, SIGNAL(fileChanged(QString)), SLOT(chargeUpdated()));
+  */
+
+  btimer = new QTimer(this);
+  connect(btimer, SIGNAL(timeout()), this, SLOT(chargeUpdated()));
+  btimer->start(3000);
 
   vsoEzxHardware.setAttribute("Device", "EZX");
 }
@@ -62,6 +63,7 @@ void EzxHardware::accyEvent(int)
 
 void EzxHardware::plugAccesory(int type)
 {
+  /*
   switch (type)
   {
     case MOTO_ACCY_TYPE_CARKIT_MID:
@@ -85,10 +87,12 @@ void EzxHardware::plugAccesory(int type)
     //default:
         //dbg("attached cable %d",type);
     }
+    */
 }
 
 void EzxHardware::unplugAccesory(int type)
 {
+  /*
   switch (type)
   {
     case MOTO_ACCY_TYPE_CARKIT_MID:
@@ -112,10 +116,12 @@ void EzxHardware::unplugAccesory(int type)
     //default:
        // dbg("detached cable %d",type);
     }
+    */
 }
 
 void EzxHardware::checkAccesories()
 {
+  /*
   unsigned long int accys;
   ioctl(accy_fd, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &accys);
   while (accys)
@@ -125,31 +131,38 @@ void EzxHardware::checkAccesories()
 
     accys &= ~(1 << (n));
   }
+  */
 }
 
 void EzxHardware::chargeUpdated()
 {
+  
   int charge_raw = batteryRaw();
   int charge_percent = batteryPercent(charge_raw);
   vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
-  //qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
+  qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
   battery.setCharge(charge_percent);
+
+  btimer->start(3000);
+ 
 }
 
 int EzxHardware::batteryRaw()
 {
-  int power_fd = open("/dev/power_ic", O_RDWR);
-  if (power_fd>=0)
-  {
-    POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
-    info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
+  QString strvalue;
+  QFile batt;
+  batt.setFileName(ADC "adc_battery");
 
-    ioctl(power_fd, POWER_IC_IOCTL_ATOD_BATT_AND_CURR, &info);
-    close(power_fd);
-    return info.batt_result;
+  if(!batt.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning()<<"Bl file not opened";
+  } else {
+        QTextStream in(&batt);
+        in >> strvalue;
+        batt.close();
   }
-  else
-    return -1;
+  return  strvalue.toInt();
+
+  
 }
 
 int EzxHardware::batteryPercent(int raw)

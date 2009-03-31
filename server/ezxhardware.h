@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QValueSpaceObject>
-#include <QFileMonitor>
+#include <QTimer>
 #include <QPowerSourceProvider>
 #include <QSocketNotifier>
 
@@ -32,7 +32,7 @@ class EzxHardware: public QObject
     QPowerSourceProvider charger;
     QPowerSourceProvider battery;
 
-    QFileMonitor fileMon;
+    QTimer *btimer;
     QSocketNotifier *accy_noti;
 };
 
