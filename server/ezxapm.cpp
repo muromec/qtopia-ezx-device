@@ -35,8 +35,8 @@ const ipm_config EzxAPM::power_profiles[] =
 
 //{13000,           900,           1,        0,             1,        13000,        13000,    26000, -1}, // LOW
 //{26000,           950,           1,        0,             1,        26000,        26000,    26000, -1}, // LOW
-  {52000,          1000,           2,        0,             1,        52000,        52000,    52000, -1}, // LOW
-  {104000,         1050,           2,        0,             1,       104000,       104000,    52000, -1}, // LOW
+//  {52000,          1000,           2,        0,             1,        52000,        52000,    52000, -1}, // LOW
+//  {104000,         1050,           2,        0,             1,       104000,       104000,    52000, -1}, // LOW
 
   {208000,         1300,           2,        0,             1,       208000,       208000,   104000, -1}, // MID
   {312000,         1350,           3,        1,             1,       208000,       208000,   104000, -1}, // MID
@@ -71,7 +71,6 @@ EzxAPM::EzxAPM(QObject *parent)
 
     // start PMU
     ::ioctl(apm_fd, APM_IOC_SET_SPROF_WIN, 1);
-    startPMU();
 
     setPowerProfile(n_profiles-1); // High performance is good at startup
 
@@ -91,6 +90,10 @@ EzxAPM::EzxAPM(QObject *parent)
     ipc,  SIGNAL(received(QString,QByteArray)),
     this, SLOT(ipcEvent(QString,QByteArray)) 
   );
+
+  timerPMU = new QTimer(this);
+  connect(timerPMU, SIGNAL(timeout()), this, SLOT(startPMU));
+  timerPMU->start(3000);
 
 
 }
@@ -169,7 +172,6 @@ void EzxAPM::apmEvent(int)
       break;
   }
 
-  startPMU();
 }
 
 void EzxAPM::ipcEvent(const QString &msg, const QByteArray &arg) {

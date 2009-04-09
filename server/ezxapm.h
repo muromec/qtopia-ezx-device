@@ -8,6 +8,7 @@
 #include <QtopiaAbstractService>
 #include <QSet>
 #include <QtopiaChannel>
+#include <QTimer>
 
 class QSocketNotifier;
 
@@ -18,7 +19,6 @@ class EzxAPM: public SystemSuspendHandler
     EzxAPM(QObject *parent = NULL);
     virtual ~EzxAPM();
 
-    void startPMU();
 
     // SystemSuspendHandler implementation
     bool canSuspend() const;
@@ -28,6 +28,7 @@ class EzxAPM: public SystemSuspendHandler
   private slots:
     void apmEvent(int fd);
     void ipcEvent(const QString &msg, const QByteArray &arg);
+    void startPMU();
 
   private:
     void adjustPower(int load = -1);
@@ -66,6 +67,8 @@ class EzxAPM: public SystemSuspendHandler
     static const int n_profiles_high;
     friend class EzxAPMService;
     EzxAPMService *service;
+
+    QTimer *timerPMU;
 };
 
 class EzxAPMService: public QtopiaAbstractService
