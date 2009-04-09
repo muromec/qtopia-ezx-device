@@ -209,6 +209,7 @@ void EzxAPM::sleep()
 void EzxAPM::startPMU()
 {
   ioctl(apm_fd, APM_IOC_STARTPMU, NULL);
+  timerPMU->start(3000);
 }
 
 // CPU power profiles management
