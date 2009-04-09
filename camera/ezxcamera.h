@@ -32,6 +32,9 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
+#define JPEG_HEADER_LEN 623
+#define JPEG_TAIL_LEN 2
+
 
 namespace camera
 {
