@@ -8,7 +8,6 @@
 
 #define CONFIG_ARCH_EZX
 #include <linux/moto_accy.h>
-#include <linux/power_ic.h>
 
 #include <QPowerSourceProvider>
 #include <QSocketNotifier>
@@ -28,6 +27,11 @@ EzxHardware::EzxHardware(QObject *parent)
     vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
     vsoEzxHardware("/Hardware/EZX")
 {
+
+  power_fd = open("/dev/power_ic", O_RDWR);
+  if (power_fd < 0)
+    qLog(Hardware) << "Error: could not open power ic";
+
   accy_fd = open("/dev/accy", O_RDWR);
   if (accy_fd>=0)
   {
@@ -41,6 +45,8 @@ EzxHardware::EzxHardware(QObject *parent)
   connect(&fileMon, SIGNAL(fileChanged(QString)), SLOT(chargeUpdated()));
 
   vsoEzxHardware.setAttribute("Device", "EZX");
+  charging_state = false;
+
 }
 
 EzxHardware::~EzxHardware()
@@ -67,9 +73,9 @@ void EzxHardware::plugAccesory(int type)
     case MOTO_ACCY_TYPE_CARKIT_MID:
     case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
     case MOTO_ACCY_TYPE_CHARGER_MID:
-      charger.setAvailability(QPowerSource::Available);
-      battery.setCharging(true);
     case MOTO_ACCY_TYPE_CABLE_USB:
+      charger.setAvailability(QPowerSource::Available);
+      charging_state = true;
       vsoEzxHardware.setAttribute("Cable/Connected", true);
       break;
 
@@ -94,9 +100,10 @@ void EzxHardware::unplugAccesory(int type)
     case MOTO_ACCY_TYPE_CARKIT_MID:
     case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
     case MOTO_ACCY_TYPE_CHARGER_MID:
+    case MOTO_ACCY_TYPE_CABLE_USB:
       charger.setAvailability(QPowerSource::NotAvailable);
       battery.setCharging(false);
-    case MOTO_ACCY_TYPE_CABLE_USB:
+      charging_state = false;
       vsoEzxHardware.setAttribute("Cable/Connected", false);
       break;
 
@@ -129,31 +136,19 @@ void EzxHardware::checkAccesories()
 
 void EzxHardware::chargeUpdated()
 {
-  int charge_raw = batteryRaw();
-  int charge_percent = batteryPercent(charge_raw);
-  vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
+  power_info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
+  ioctl(power_fd, POWER_IC_IOCTL_ATOD_BATT_AND_CURR, &power_info);
+
+  int charge_percent = batteryPercent();
+  vsoEzxHardware.setAttribute("Battery/Raw", power_info.batt_result);
+  vsoEzxHardware.setAttribute("Current/Raw", power_info.curr_result);
   //qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
   battery.setCharge(charge_percent);
+  battery.setCharging( charging_state && (power_info.curr_result > 100) );
 }
 
-int EzxHardware::batteryRaw()
+int EzxHardware::batteryPercent()
 {
-  int power_fd = open("/dev/power_ic", O_RDWR);
-  if (power_fd>=0)
-  {
-    POWER_IC_ATOD_REQUEST_BATT_AND_CURR_T info;
-    info.timing = POWER_IC_ATOD_TIMING_IMMEDIATE;
-
-    ioctl(power_fd, POWER_IC_IOCTL_ATOD_BATT_AND_CURR, &info);
-    close(power_fd);
-    return info.batt_result;
-  }
-  else
-    return -1;
-}
-
-int EzxHardware::batteryPercent(int raw)
-{
-  return (raw - 490 ) * 10 / 22;
+  return (power_info.batt_result - 490 ) * 10 / 22;
 }
 
