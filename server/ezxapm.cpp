@@ -40,9 +40,9 @@ const ipm_config EzxAPM::power_profiles[] =
 
   {208000,         1300,           2,        0,             1,       208000,       208000,   104000, -1}, // MID
   {312000,         1350,           3,        1,             1,       208000,       208000,   104000, -1}, // MID
-  {416000,         1400,           4,        1,             1,       208000,       208000,   104000, -1}, // MID
+  {416000,         1400,           3,        1,             1,       208000,       208000,   104000, -1}, // MID
 
-  {520000,         1450,           5,        1,             1,       208000,       208000,   208000, -1}, // HIGH
+  {520000,         1450,           3,        1,             1,       208000,       208000,   208000, -1}, // HIGH
 //{624000,         1500,           6,        1,             1,       208000,       208000,   104000, -1}  // HIGH
 };
 const int EzxAPM::n_profiles = sizeof(power_profiles)/sizeof(ipm_config);
@@ -92,7 +92,7 @@ EzxAPM::EzxAPM(QObject *parent)
   );
 
   timerPMU = new QTimer(this);
-  connect(timerPMU, SIGNAL(timeout()), this, SLOT(startPMU));
+  connect(timerPMU, SIGNAL(timeout()), this, SLOT(startPMU()));
   timerPMU->start(3000);
 
 
