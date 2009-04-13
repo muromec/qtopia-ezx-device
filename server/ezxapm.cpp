@@ -39,10 +39,10 @@ const ipm_config EzxAPM::power_profiles[] =
 //  {104000,         1050,           2,        0,             1,       104000,       104000,    52000, -1}, // LOW
 
   {208000,         1300,           2,        0,             1,       208000,       208000,   104000, -1}, // MID
-  {312000,         1350,           3,        1,             1,       208000,       208000,   104000, -1}, // MID
-  {416000,         1400,           3,        1,             1,       208000,       208000,   104000, -1}, // MID
+  {312000,         1350,           2,        1,             1,       208000,       208000,   104000, -1}, // MID
+  {416000,         1400,           4,        1,             1,       208000,       208000,   104000, -1}, // MID
 
-  {520000,         1450,           3,        1,             1,       208000,       208000,   208000, -1}, // HIGH
+  {520000,         1450,           5,        1,             1,       208000,       208000,   208000, -1}, // HIGH
 //{624000,         1500,           6,        1,             1,       208000,       208000,   104000, -1}  // HIGH
 };
 const int EzxAPM::n_profiles = sizeof(power_profiles)/sizeof(ipm_config);
@@ -230,12 +230,13 @@ void EzxAPM::setPowerProfile(int n)
   ipm_config cconf;
   int ret = ::ioctl(apm_fd, APM_IOC_GET_IPM_CONFIG, &cconf);
   ret = ::ioctl(apm_fd, APM_IOC_SET_IPM_CONFIG, &power_profiles[n]);
-  qLog(Hardware) << "CPU clock:" << cconf.core_freq/1000 << "MHz ->" << power_profiles[n].core_freq/1000 << "MHz";
+  qLog(Hardware) << "Set CPU clock:" << cconf.core_freq/1000 << "MHz ->" << power_profiles[n].core_freq/1000 << "MHz";
 
   // Publish actual clock to ValueSpace
   ret = ::ioctl(apm_fd, APM_IOC_GET_IPM_CONFIG, &cconf);
   vso.setAttribute("CPU/Clock", cconf.core_freq/1000);
 
+  qLog(Hardware) << "Get CPU clock:" << cconf.core_freq/1000;
 
   current_profile = n;
   load_balance = 0; // reset it to avoid confusing logic
