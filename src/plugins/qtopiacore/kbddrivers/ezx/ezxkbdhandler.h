@@ -37,16 +37,16 @@ public:
     ~EZXKbdHandler();
 
 private:
-    QSocketNotifier *k_notify;
-    QSocketNotifier *p_notify;
+    QSocketNotifier *pxa_notify;
+    QSocketNotifier *gpio_notify;
+    QSocketNotifier *pcap_notify;
 
-    int  kbdFD;
-    int  pwrFD;
+    int  pxaFD;
+    int  gpioFD;
+    int  pcapFD;
 
 private Q_SLOTS:
     void readData(int fd);
-    void readKbd();
-    void readPwr();
 };
 
 

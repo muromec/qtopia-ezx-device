@@ -108,37 +108,93 @@ void EzxVolumeService::setCallDomain()
     e << QString("Headset");
 }
 
+void EzxVolumeService::adjustSpeakerVolume( int left, int right )
+{
+
+  initMixer();
+
+  for ( elem = snd_mixer_first_elem( mixerFd); elem; elem = snd_mixer_elem_next( elem) ) {
+      if ( snd_mixer_elem_get_type( elem ) == SND_MIXER_ELEM_SIMPLE &&
+           snd_mixer_selem_is_active( elem) ) {
+
+          elemName = QString(snd_mixer_selem_get_name( elem));
+
+          if(elemName == "Master") { // Master output // could use PCM
+
+              if(snd_mixer_selem_has_playback_volume( elem) > 0) {
+                  snd_mixer_selem_set_playback_volume( elem,SND_MIXER_SCHN_FRONT_LEFT, (long)&left);
+                  snd_mixer_selem_set_playback_volume( elem,SND_MIXER_SCHN_FRONT_RIGHT, (long)&right);
+              }
+          }
+      }
+  }
+
+  closeMixer();
+}
 
 void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustType adjust)
 {
-  /*
-    int mixerFd = open("/dev/mixer", O_RDWR);
-    if (mixerFd >= 0) {
-        int leftright, left, right;
+      int leftright, left, right;
 
-        if (adjust == Relative) {
-            ioctl(mixerFd, MIXER_READ(SOUND_MIXER_OGAIN), &leftright);
+      if (adjust == Relative) {
+          leftright = m_d->currVolume;
 
-            left = leftright; 
-            right = leftright; 
+          left = leftright;
+          right = leftright;
 
-            left = qBound(0, left + leftChannel, 100);
-            right = qBound(0, right + rightChannel, 100);
+          left = qBound(0, left + leftChannel, 100);
+          right = qBound(0, right + rightChannel, 100);
 
-        } else {
-            left = leftChannel;
-            right = rightChannel;
-        }
+      } else {
+          left = leftChannel;
+          right = rightChannel;
+      }
 
-        leftright = (left + right) >> 1;
-        int input = leftright;
-        m_d->currVolume = leftright;
-        ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_OGAIN), &leftright);       
-        ioctl(mixerFd, MIXER_WRITE(SOUND_MIXER_IGAIN), &input);
-        close(mixerFd);
-    }
-    */
+      leftright = (left + right) >> 1;
+      adjustSpeakerVolume( left, right );
+
 }
+
+int EzxVolumeService::initMixer()
+{
+    int result;
+  if ((result = snd_mixer_open( &mixerFd, 0)) < 0) {
+        qWarning()<<"snd_mixer_open error"<< result;
+        mixerFd = NULL;
+        return result;
+    }
+/*  hw:0
+  hw:0,0*/
+    if ((result = snd_mixer_attach( mixerFd, "default")) < 0) {
+        qWarning()<<"snd_mixer_attach error"<< result;
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    if ((result = snd_mixer_selem_register( mixerFd, NULL, NULL)) < 0) {
+        qWarning()<<"snd_mixer_selem_register error"<<result;
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    if ((result = snd_mixer_load( mixerFd)) < 0) {
+        qWarning()<<"snd_mixer_load error"<<result;
+        snd_mixer_close(mixerFd);
+        mixerFd = NULL;
+        return result;
+    }
+    return result;
+}
+
+int EzxVolumeService::closeMixer()
+{
+     int result = snd_mixer_detach( mixerFd, "default" );
+     result = snd_mixer_close( mixerFd );
+//     snd_mixer_free( mixerFd ); //causes segfault
+    return 0;
+
+}
+
 
 QTOPIA_TASK(EzxVolumeService, EzxVolumeService);
 

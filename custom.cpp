@@ -27,7 +27,7 @@
 #include <QTextStream>
 #include <QDebug>
 
-#define BL "/sys/class/backlight/pwm-backlight/"
+#define BL "/sys/class/backlight/pwm-backlight.0/"
 
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {

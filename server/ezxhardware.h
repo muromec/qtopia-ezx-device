@@ -5,7 +5,7 @@
 #include <QValueSpaceObject>
 #include <QTimer>
 #include <QPowerSourceProvider>
-#include <QSocketNotifier>
+#include <QtopiaChannel>
 
 class EzxHardware: public QObject
 {
@@ -14,26 +14,24 @@ class EzxHardware: public QObject
     EzxHardware(QObject *parent = NULL);
     virtual ~EzxHardware();
 
-    void plugAccesory(int type);
-    void unplugAccesory(int type);
-    void checkAccesories();
   private slots:
-    void accyEvent(int);
     void chargeUpdated();
+    void ipcEvent(const QString &msg, const QByteArray &arg);
+
   private:
     int batteryRaw();
     int batteryPercent(int raw);
-
-    int accy_fd;
+    bool cable();
+    bool regulator();
 
     QValueSpaceObject vsoPortableHandsfree;
     QValueSpaceObject vsoEzxHardware;
+    QtopiaChannel *ipc;
 
     QPowerSourceProvider charger;
     QPowerSourceProvider battery;
 
     QTimer *btimer;
-    QSocketNotifier *accy_noti;
 };
 
 #endif // _EZXHARDWARE_H_

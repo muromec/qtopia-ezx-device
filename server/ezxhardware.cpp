@@ -14,6 +14,8 @@
 
 #include "ezxhardware.h"
 #define ADC "/sys/devices/platform/pxa2xx-spi.1/spi1.0/"
+#define SUPPLY "/sys/class/power_supply/"
+#define REGULATOR "/sys/class/regulator/regulator.1/"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
 
@@ -24,124 +26,38 @@ EzxHardware::EzxHardware(QObject *parent)
     vsoPortableHandsfree("/Hardware/Accessories/PortableHandsfree"),
     vsoEzxHardware("/Hardware/EZX")
 {
-  /*
-  accy_fd = open("/dev/accy", O_RDWR);
-  if (accy_fd>=0)
-  {
-    checkAccesories();
-    accy_noti = new QSocketNotifier(accy_fd, QSocketNotifier::Read, this);
-    connect(accy_noti, SIGNAL(activated(int)), SLOT(accyEvent(int)));
-  }
-  else
-    qLog(Hardware) << "Error: could not open accy";
-
-  */
 
   btimer = new QTimer(this);
   connect(btimer, SIGNAL(timeout()), this, SLOT(chargeUpdated()));
   btimer->start(3000);
 
   vsoEzxHardware.setAttribute("Device", "EZX");
+
+  ipc = new QtopiaChannel("QPE/Jack", this);
+  connect(
+    ipc,  SIGNAL(received(QString,QByteArray)),
+    this, SLOT(ipcEvent(QString,QByteArray))
+  );
+
+
 }
 
 EzxHardware::~EzxHardware()
 {
-  if (accy_fd>=0)
-    close(accy_fd);
-}
-
-void EzxHardware::accyEvent(int)
-{
-  unsigned long int event;
-  read(accy_fd, &event, 4);
-  qLog(Hardware) << "EzxAccessory:" << (0x7fffffff&event) << ((event & 0x80000000)?"plugged":"unplugged");
-  if (event & 0x80000000)
-    plugAccesory  (0x7fffffff & event);
-  else
-    unplugAccesory(0x7fffffff & event);
-}
-
-void EzxHardware::plugAccesory(int type)
-{
-  /*
-  switch (type)
-  {
-    case MOTO_ACCY_TYPE_CARKIT_MID:
-    case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
-    case MOTO_ACCY_TYPE_CHARGER_MID:
-      charger.setAvailability(QPowerSource::Available);
-      battery.setCharging(true);
-    case MOTO_ACCY_TYPE_CABLE_USB:
-      vsoEzxHardware.setAttribute("Cable/Connected", true);
-      break;
-
-    // headsets handled by script and qtopia
-    case MOTO_ACCY_TYPE_HEADSET_MONO:
-    case MOTO_ACCY_TYPE_HEADSET_STEREO:
-    case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
-    case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
-    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
-    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
-      vsoPortableHandsfree.setAttribute("Present", type);
-      break;
-    //default:
-        //dbg("attached cable %d",type);
-    }
-    */
-}
-
-void EzxHardware::unplugAccesory(int type)
-{
-  /*
-  switch (type)
-  {
-    case MOTO_ACCY_TYPE_CARKIT_MID:
-    case MOTO_ACCY_TYPE_CHARGER_MID_MPX:
-    case MOTO_ACCY_TYPE_CHARGER_MID:
-      charger.setAvailability(QPowerSource::NotAvailable);
-      battery.setCharging(false);
-    case MOTO_ACCY_TYPE_CABLE_USB:
-      vsoEzxHardware.setAttribute("Cable/Connected", false);
-      break;
-
-    case MOTO_ACCY_TYPE_HEADSET_MONO:
-    case MOTO_ACCY_TYPE_HEADSET_STEREO:
-    case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
-    case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
-    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
-    case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
-      vsoPortableHandsfree.setAttribute("Present", 0);
-      break;
-
-    //default:
-       // dbg("detached cable %d",type);
-    }
-    */
-}
-
-void EzxHardware::checkAccesories()
-{
-  /*
-  unsigned long int accys;
-  ioctl(accy_fd, MOTO_ACCY_IOCTL_GET_ALL_DEVICES, &accys);
-  while (accys)
-  {
-    int n = generic_ffs(accys) - 1;
-    plugAccesory(n);
-
-    accys &= ~(1 << (n));
-  }
-  */
 }
 
 void EzxHardware::chargeUpdated()
 {
   
   int charge_raw = batteryRaw();
-  int charge_percent = batteryPercent(charge_raw);
+  int charge_percent = 90;//batteryPercent(charge_raw);
   vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
   qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
+
   battery.setCharge(charge_percent);
+  battery.setCharging(regulator());
+
+  vsoEzxHardware.setAttribute("Cable/Connected", cable() );
 
   btimer->start(3000);
  
@@ -149,12 +65,13 @@ void EzxHardware::chargeUpdated()
 
 int EzxHardware::batteryRaw()
 {
+
   QString strvalue;
   QFile batt;
-  batt.setFileName(ADC "adc_battery");
+  batt.setFileName("/sys/class/power_supply/main-battery/voltage_now");
 
   if(!batt.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning()<<"Bl file not opened";
+        qWarning()<<"voltage file not opened";
   } else {
         QTextStream in(&batt);
         in >> strvalue;
@@ -165,8 +82,72 @@ int EzxHardware::batteryRaw()
   
 }
 
+bool EzxHardware::cable() {
+
+  QStringList cableNames;
+  cableNames << "ac" << "usb";
+
+  for (int i = 0; i < cableNames.size(); ++i) {
+
+    QString cableName = QString(SUPPLY "%1/online")
+      .arg(cableNames.at(i));
+
+    QFile cableFile;
+    cableFile.setFileName(cableName);
+
+    QString cableState;
+
+    if(!cableFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+      qWarning()<<"cant open cable state file";
+    } else {
+      QTextStream in(&cableFile);
+      in >> cableState;
+      cableFile.close();
+
+    }
+
+    if (cableState.toInt())
+      return true;
+
+  }
+
+  return false;
+
+}
+
+bool EzxHardware::regulator() {
+
+  QFile regulatorFile;
+  regulatorFile.setFileName(REGULATOR "state");
+
+  QString regulatorState;
+
+  if(!regulatorFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qWarning()<<"cant open regulator file";
+  } else {
+    QTextStream in(&regulatorFile);
+    in >> regulatorState;
+    regulatorFile.close();
+
+    return (regulatorState == "enabled");
+
+  }
+
+  return false;
+
+
+}
+
 int EzxHardware::batteryPercent(int raw)
 {
   return (raw - 490 ) * 10 / 22;
+}
+
+void EzxHardware::ipcEvent(const QString &msg, const QByteArray &arg)
+{
+
+  if (msg == "plug()") {
+    vsoPortableHandsfree.setAttribute("Present", QString(arg).toInt());
+  }
 }
 

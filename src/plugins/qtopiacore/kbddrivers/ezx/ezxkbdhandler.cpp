@@ -24,6 +24,7 @@
 
 #include <QScreen>
 #include <QSocketNotifier>
+#include <QtopiaChannel>
 
 #include "qscreen_qws.h"
 #include "qwindowsystem_qws.h"
@@ -49,9 +50,6 @@
 #define VTACQSIG SIGUSR1
 #define VTRELSIG SIGUSR2
 
-static int vtQws = 0;
-static unsigned int lastKey = -1;
-
 struct press_mode {
   bool f_press;
   bool f_auto;
@@ -66,25 +64,41 @@ EZXKbdHandler::EZXKbdHandler()
     setObjectName( "EZX Keypad Handler" );
 
     // normal pxa270 keyboard
-    kbdFD = ::open("/dev/input/event0", O_RDONLY | O_NDELAY, 0);
-    if (kbdFD >= 0)
+    pxaFD = ::open("/dev/input/event0", O_RDONLY | O_NDELAY, 0);
+    if (pxaFD >= 0)
     {
-        qLog(Input) << "Opened /dev/input/event0 as keypad input";
-        k_notify = new QSocketNotifier(kbdFD, QSocketNotifier::Read, this);
-        connect(k_notify, SIGNAL(activated(int)), this, SLOT(readKbd()));
+        pxa_notify = new QSocketNotifier(pxaFD, QSocketNotifier::Read, this);
+        connect(pxa_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
     }
     else
     {
-        qWarning("Cannot open keypad (%s)", strerror(errno));
+        qWarning("Cannot open pxa keypad (%s)", strerror(errno));
     }
 
-    // separate device for red key handled via PCAP
-    pwrFD = ::open("/dev/input/event2", O_RDONLY | O_NDELAY, 0); 
-    if (pwrFD >= 0)
+
+    // flip key
+    gpioFD = ::open("/dev/input/event1", O_RDONLY | O_NDELAY, 0);
+    if (gpioFD >= 0)
     {
-      qLog(Input) << "Opened /dev/input/event2 as powerkey input"; 
-       p_notify = new QSocketNotifier(pwrFD, QSocketNotifier::Read, this);
-       connect(p_notify, SIGNAL(activated(int)), this, SLOT(readPwr()));  
+        gpio_notify = new QSocketNotifier(gpioFD, QSocketNotifier::Read, this);
+        connect(gpio_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
+    }
+    else
+    {
+        qWarning("Cannot open flip device (%s)", strerror(errno));
+    }
+
+
+    // jack event and power key
+    pcapFD = ::open("/dev/input/event2", O_RDONLY | O_NDELAY, 0);
+    if (pcapFD >= 0)
+    {
+        pcap_notify = new QSocketNotifier(pcapFD, QSocketNotifier::Read, this);
+        connect(pcap_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
+    }
+    else
+    {
+        qWarning("Cannot open pcap events device (%s)", strerror(errno));
     }
 
 
@@ -92,86 +106,63 @@ EZXKbdHandler::EZXKbdHandler()
 
 EZXKbdHandler::~EZXKbdHandler()
 {
-    if (kbdFD >= 0)
-        ::close(kbdFD);
+    if (pxaFD >= 0)
+        ::close(pxaFD);
 
-    if (pwrFD >= 0)
-        ::close(pwrFD);
+    if (gpioFD >= 0)
+        ::close(gpioFD);
+
+    if (pcapFD >= 0)
+        ::close(pcapFD);
+
 }
 
 
 void EZXKbdHandler::readData(int fd)
 {
-    /*
-     * Call:
-     * 1c - green
-     * 1e - red
-     *
-     * Joystick:
-     * 0e - left
-     * 0f - right 
-     * 0d - down
-     * 0c - up
-     *
-     * Left side:
-     * 25 - +
-     * 26 - -
-     * 27 - select
-     *
-     * Right side:
-     * 19: camera
-     * 20: voice
-     *
-     * Flip:
-     * 1b: flip
-    */
-    //unsigned char           buf[64];
+
     struct input_event ev;
     unsigned int            qtKeyCode;
     Qt::KeyboardModifiers   modifiers = Qt::NoModifier;
 
     int n = ::read(fd, &ev, sizeof(struct input_event) );
-    
+
     if( (n != (int)sizeof(struct input_event)) || (!ev.type) )
                   return;
 
     unsigned short unicode         = 0xffff;
     unsigned short isPress = controlCodeMode[ev.value].f_press;
     unsigned short isAuto  = controlCodeMode[ev.value].f_auto;
-    
-    bool repeate;
+
+   QByteArray ipc_arg;
 
     switch (ev.code)
     {
-        
-        // Navigation+
-        case 0x66: qtKeyCode = Qt::Key_Call;   break; 
-        case 0x74: qtKeyCode = Qt::Key_Hangup;  break;
 
-        case 0x67: qtKeyCode = Qt::Key_Up; break;
-        case 0x6c: qtKeyCode = Qt::Key_Down; break;
-        case 0x69: qtKeyCode = Qt::Key_Left; break;
-        case 0x6a: qtKeyCode = Qt::Key_Right; break;
-        case 0x60: qtKeyCode = Qt::Key_Select; break;
+        case KEY_SEND: qtKeyCode = Qt::Key_Call;   break;
+        case KEY_POWER: qtKeyCode = Qt::Key_Hangup;  break;
 
-        // Keys on left hand side of device
-        case 0x68: qtKeyCode = Qt::Key_VolumeUp; break;
-        case 0x6d: qtKeyCode = Qt::Key_VolumeDown; break;
-        case 0x1c: qtKeyCode = Qt::Key_Select; break;
-
-        // Keys on right hand side of device
-        //case 0x00: qtKeyCode = Qt::Key_F4; break; // FIX KERNEL
-        case 0xa7: qtKeyCode = Qt::Key_F7; break;   // Key +
-
+        case KEY_UP: qtKeyCode = Qt::Key_Up; break;
+        case KEY_DOWN: qtKeyCode = Qt::Key_Down; break;
+        case KEY_LEFT: qtKeyCode = Qt::Key_Left; break;
+        case KEY_RIGHT: qtKeyCode = Qt::Key_Right; break;
+        case KEY_KPENTER: qtKeyCode = Qt::Key_Select; break;
+         // Keys on left hand side of device
+        case KEY_PAGEUP: qtKeyCode = Qt::Key_VolumeUp; break;
+        case KEY_PAGEDOWN: qtKeyCode = Qt::Key_VolumeDown; break;
+        case KEY_SELECT: qtKeyCode = Qt::Key_Select; break;
+         // Keys on right hand side of device
+        case KEY_CAMERA: qtKeyCode = Qt::Key_F4; break;
+        case KEY_RECORD: qtKeyCode = Qt::Key_F7; break;
         // flip
-        //case 0x1b: qtKeyCode = Qt::Key_Flip; break; // FIX KERNEL
+        case SW_LID: qtKeyCode = Qt::Key_Flip; break;
 
         // headphone FIX KERNEL for E2/E6
         /*
         case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
 
         case 0x2e: qtKeyCode = Qt::Key_F29; break;
-        
+
         case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
         case 0x2d:
         case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
@@ -199,21 +190,18 @@ void EZXKbdHandler::readData(int fd)
 
         case 0x16: qtKeyCode = Qt::Key_Clear; break;*/
 
-
-        // unknown
-        printf("unknown key: %x control: %d\n",ev.code,ev.value);
-
-    }
+        case SW_HEADPHONE_INSERT:
+                   ipc_arg.setNum(ev.value);
+                   QtopiaChannel::send("QPE/Jack", "plug()",ipc_arg);
+                   return;
+        default:
+          // unknown
+            printf("unknown key: %x control: %d\n",ev.code,ev.value);
+            return;
+     }
 
     processKeyEvent(unicode, qtKeyCode, modifiers, isPress, isAuto );
     printf("%x %d %d\n",qtKeyCode, isPress, isAuto );
 
 }
 
-void EZXKbdHandler::readKbd() {
-  readData(kbdFD);
-}
-
-void EZXKbdHandler::readPwr() {
-  readData(pwrFD);
-}

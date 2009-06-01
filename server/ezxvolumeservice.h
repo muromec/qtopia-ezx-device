@@ -19,6 +19,7 @@
 
 #ifndef __QTOPIA_MEDIA_DEFAULTVOLUMEPROVIDER_H
 #define __QTOPIA_MEDIA_DEFAULTVOLUMEPROVIDER_H
+#include <alsa/asoundlib.h>
 
 #include <qtopiaipcadaptor.h>
 
@@ -46,6 +47,14 @@ private slots:
 
 private:
     void adjustVolume(int leftChannel, int rightChannel, AdjustType);
+    void adjustSpeakerVolume(int left, int right);
+
+    int initMixer();
+    int closeMixer();
+
+    snd_mixer_t *mixerFd;
+    snd_mixer_elem_t *elem;
+    QString elemName;
 
     int m_leftChannelVolume;
     int m_rightChannelVolume;

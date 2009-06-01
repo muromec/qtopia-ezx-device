@@ -49,38 +49,19 @@ bool EZXMultiplexerPlugin::detect( QSerialIODevice *device )
 QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         ( QSerialIODevice *device )
 {
-//    return new QNullSerialIODeviceMultiplexer( device );
 
         // in the custom.h file as QTOPIA_PHONE_DEVICE and then passed
         // down to us in the "device" parameter.
         QMultiPortMultiplexer *mux = new QMultiPortMultiplexer( device );
 
         // Add the secondary channel.
-        QSerialPort *secondaryMux = QSerialPort::create( "/dev/mux1" );
+        QSerialPort *secondaryMux = QSerialPort::create( "/dev/mux2" );
         mux->addChannel( "secondary", secondaryMux );
 
         // FIXME use QList
         // open all ports to pass handshake
-        QSerialPort *smsMux = QSerialPort::create( "/dev/mux2" );
+        QSerialPort *smsMux = QSerialPort::create( "/dev/mux3" );
         mux->addChannel( "sms", smsMux );
-
-        QSerialPort *mux3 = QSerialPort::create( "/dev/mux3" );
-        mux->addChannel( "mux3", mux3 );
-
-        QSerialPort *mux4 = QSerialPort::create( "/dev/mux4" );
-        mux->addChannel( "mux4", mux4 );
-
-        QSerialPort *mux5 = QSerialPort::create( "/dev/mux5" );
-        mux->addChannel( "mux5", mux5 );
-
-        QSerialPort *mux6 = QSerialPort::create( "/dev/mux6" );
-        mux->addChannel( "mux6", mux6 );
-
-        QSerialPort *mux7 = QSerialPort::create( "/dev/mux7" );
-        mux->addChannel( "mux7", mux7 );
-
-        QSerialPort *mux8 = QSerialPort::create( "/dev/mux8" );
-        mux->addChannel( "mux8", mux8 );
 
         // power on bp
         mux->chat(device,"AT+EPOM=1,0");
@@ -93,15 +74,6 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         // ??
         mux->chat(device,"AT+EAPF=12,1,0" );
         mux->chat(device,"AT");
-
-        // close unused lines
-        //mux2->close();
-        mux3->close();
-        mux4->close();
-        mux5->close();
-        mux6->close();
-        mux7->close();
-        mux8->close();
 
         return mux;
 }

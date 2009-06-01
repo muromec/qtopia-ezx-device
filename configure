@@ -3,7 +3,7 @@
 -arch arm 
 -no-qvfb
 -displaysize 240x320
--prefix /opt
+-prefix /opt/Qtopia
 -launch-method quicklaunch
 -font DejaVuSans.ttf
 -qtopiamedia
@@ -15,7 +15,7 @@
 -no-infrared
 -dbus
 -bluetooth
--sound-system oss 
+-sound-system alsa
 -extra-qtopiacore-config "-depths 16,18"
 -extra-qtopiacore-config "-plugin-gfx-transformed" 
 -extra-qtopiacore-config "-qt-mouse-tslib" 

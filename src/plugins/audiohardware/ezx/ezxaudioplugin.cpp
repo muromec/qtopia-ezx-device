@@ -356,8 +356,10 @@ bool SpeakerAudioState::isAvailable() const
 bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
 
+  if (m_isPhone)
     return set_audio_mode("Earpiece",m_isPhone);
-        
+  else
+    return set_audio_mode("Loudspeaker",m_isPhone);
 }
 
 bool SpeakerAudioState::leave()
