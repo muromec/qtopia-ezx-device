@@ -50,7 +50,7 @@ void EzxHardware::chargeUpdated()
 {
   
   int charge_raw = batteryRaw();
-  int charge_percent = 90;//batteryPercent(charge_raw);
+  int charge_percent = batteryPercent(charge_raw);
   vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
   qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
 
@@ -140,7 +140,7 @@ bool EzxHardware::regulator() {
 
 int EzxHardware::batteryPercent(int raw)
 {
-  return (raw - 490 ) * 10 / 22;
+  return (raw-2000)*100/2100;
 }
 
 void EzxHardware::ipcEvent(const QString &msg, const QByteArray &arg)

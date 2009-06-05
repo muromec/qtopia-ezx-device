@@ -63,6 +63,24 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         QSerialPort *smsMux = QSerialPort::create( "/dev/mux3" );
         mux->addChannel( "sms", smsMux );
 
+        QSerialPort *mux4 = QSerialPort::create( "/dev/mux4" );
+        mux->addChannel( "mux4", mux4 );
+
+        QSerialPort *mux5 = QSerialPort::create( "/dev/mux5" );
+        mux->addChannel( "mux5", mux5 );
+
+        QSerialPort *mux7 = QSerialPort::create( "/dev/mux7" );
+        mux->addChannel( "mux7", mux7 );
+
+        QSerialPort *mux8 = QSerialPort::create( "/dev/mux8" );
+        mux->addChannel( "mux8", mux8 );
+
+        QSerialPort *mux9 = QSerialPort::create( "/dev/mux9" );
+        mux->addChannel( "mux9", mux9 );
+
+        QSerialPort *mux10 = QSerialPort::create( "/dev/mux10" );
+        mux->addChannel( "mux10", mux10 );
+
         // power on bp
         mux->chat(device,"AT+EPOM=1,0");
 
@@ -74,6 +92,14 @@ QSerialIODeviceMultiplexer *EZXMultiplexerPlugin::create
         // ??
         mux->chat(device,"AT+EAPF=12,1,0" );
         mux->chat(device,"AT");
+
+        // close unused lines
+        mux4->close();
+        mux5->close();
+        mux7->close();
+        mux8->close();
+        mux9->close();
+        mux10->close();
 
         return mux;
 }
