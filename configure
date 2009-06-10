@@ -7,8 +7,9 @@
 -launch-method quicklaunch
 -font DejaVuSans.ttf
 -qtopiamedia
--mediaengines cruxus
--voip
+-mediaengines cruxus,helix
+-helix-system-id linux-2.2-libc6-armv5te-cross-gcc3.3-iwmmxt-softfloat
+-no-voip
 -no-drm
 -no-sxe
 -no-test
@@ -32,7 +33,7 @@
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
 -release
--no-samples
+-enable-samples
 -lrt
 -sdk /opt/toolchains/arm-iwmmxt-linux-gnu/qtopia
 -L/opt/toolchains/arm-iwmmxt-linux-gnu/stage/lib
