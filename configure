@@ -30,6 +30,9 @@
 -extra-qtopiacore-config "-system-libpng"
 -extra-qtopiacore-config "-system-libjpeg"
 -extra-qtopiacore-config "-qt-gif"
+-extra-qtopiacore-config "-I/opt/toolchains/arm-iwmmxt-linux-gnu/stage/include/freetype2"
+-extra-qtopiacore-config "-L/opt/toolchains/arm-iwmmxt-linux-gnu/stage/lib"
+-extra-qtopiacore-config "-system-freetype"
 -extra-qt-config -no-glib 
 -D SYSINFO_GEEK_MODE
 -release
