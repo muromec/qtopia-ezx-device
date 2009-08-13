@@ -115,7 +115,7 @@ void select_item(char *elem_name, char *item) {
 
 }
 
-static inline bool set_audio_mode(char *path, bool bp)
+static inline bool set_audio_mode(char *path, bool bp, bool stereo)
 {
 
     initMixer();
@@ -126,6 +126,11 @@ static inline bool set_audio_mode(char *path, bool bp)
       select_item("DAI Select","Stereo");
 
     select_item("Output mode",path);
+
+    if (stereo)
+      select_item("Downmixer","Off");
+    else
+      select_item("Downmixer","2->1ch");
 
     closeMixer();
 
@@ -357,9 +362,10 @@ bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
 
   if (m_isPhone)
-    return set_audio_mode("Earpiece",m_isPhone);
+    return set_audio_mode("Earpiece",m_isPhone,false);
   else
-    return set_audio_mode("Loudspeaker",m_isPhone);
+    return set_audio_mode("Loudspeaker",m_isPhone,false);
+
 }
 
 bool SpeakerAudioState::leave()
@@ -488,7 +494,7 @@ bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
     return set_audio_mode(out,in,m_isPhone);
 */
 
-    return set_audio_mode("Headset",m_isPhone);
+    return set_audio_mode("Headset",m_isPhone,!m_isPhone);
 
 
 }
@@ -544,7 +550,7 @@ bool SpeakerphoneAudioState::isAvailable() const
 
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
-    return set_audio_mode("Loudspeaker",true);
+    return set_audio_mode("Loudspeaker",true, false);
 }
 
 bool SpeakerphoneAudioState::leave()
