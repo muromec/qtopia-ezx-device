@@ -15,7 +15,7 @@
 #include "ezxhardware.h"
 #define ADC "/sys/devices/platform/pxa2xx-spi.1/spi1.0/"
 #define SUPPLY "/sys/class/power_supply/"
-#define REGULATOR "/sys/class/regulator/regulator.1/"
+#define REGULATOR "/sys/class/regulator/regulator.%/"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
 
@@ -39,6 +39,33 @@ EzxHardware::EzxHardware(QObject *parent)
     this, SLOT(ipcEvent(QString,QByteArray))
   );
 
+  regulator_num = -1;
+  int n;
+
+  for (n=0;regulator_num == -1;n++) {
+
+    QFile regulator_file;
+    QString name = QString(REGULATOR"name").arg(n);
+
+    qWarning() << name;
+
+    regulator_file.setFileName(name);
+
+    if(! regulator_file.open(QIODevice::ReadOnly | QIODevice::Text))
+      break;
+
+    QTextStream in(&regulator_file);
+    QString reg_name;
+    in >> reg_name;
+
+    qWarning() << reg_name;
+
+    if (reg_name == "eoc_charger")
+      regulator_num = n;
+
+    regulator_file.close();
+
+  }
 
 }
 
@@ -118,7 +145,8 @@ bool EzxHardware::cable() {
 bool EzxHardware::regulator() {
 
   QFile regulatorFile;
-  regulatorFile.setFileName(REGULATOR "state");
+  QString filename = QString(REGULATOR "state").arg(regulator_num);
+  regulatorFile.setFileName(filename);
 
   QString regulatorState;
 

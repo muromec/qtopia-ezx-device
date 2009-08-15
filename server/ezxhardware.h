@@ -24,6 +24,7 @@ class EzxHardware: public QObject
     bool cable();
     bool regulator();
 
+    int regulator_num;
     QValueSpaceObject vsoPortableHandsfree;
     QValueSpaceObject vsoEzxHardware;
     QtopiaChannel *ipc;
