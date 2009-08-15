@@ -126,4 +126,18 @@ void EzxModemService::initialize()
 }
 
 
+void EzxModemService::suspend()
+{
+    qWarning() << "modem suspend";
+    primaryAtChat()->chat( "AT+CMER=0,0,0,0,0" );
 
+    suspendDone();
+}
+
+void EzxModemService::wake()
+{
+    qWarning() << "modem wake";
+    primaryAtChat()->chat( "AT+CMER=3,0,0,2,0" );
+
+    wakeDone();
+}

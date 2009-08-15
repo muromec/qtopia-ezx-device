@@ -15,6 +15,10 @@ public:
 private slots:
     void init( QSerialIODeviceMultiplexer *mux ); 
 
+protected slots:
+    virtual void suspend();
+    virtual void wake();
+
 private:
     EzxModemServicePrivate *d;
 };
