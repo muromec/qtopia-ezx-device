@@ -81,10 +81,17 @@ void EzxHardware::chargeUpdated()
   vsoEzxHardware.setAttribute("Battery/Raw", charge_raw);
   qLog(Hardware) << "Charge: raw =" << charge_raw << "; percent =" << charge_percent;
 
-  battery.setCharge(charge_percent);
-  battery.setCharging(regulator());
+  bool cablePlugged = cable();
 
-  vsoEzxHardware.setAttribute("Cable/Connected", cable() );
+  if (cablePlugged)
+    charger.setAvailability(QPowerSource::Available);
+  else
+    charger.setAvailability(QPowerSource::NotAvailable);
+
+  battery.setCharge(charge_percent);
+  battery.setCharging(cablePlugged && regulator() );
+
+  vsoEzxHardware.setAttribute("Cable/Connected", cablePlugged );
 
   btimer->start(3000);
  
@@ -111,31 +118,21 @@ int EzxHardware::batteryRaw()
 
 bool EzxHardware::cable() {
 
-  QStringList cableNames;
-  cableNames << "ac" << "usb";
+  QFile cableFile;
+  cableFile.setFileName(CABLE);
 
-  for (int i = 0; i < cableNames.size(); ++i) {
+  QString cableState;
 
-    QFile cableFile;
-    cableFile.setFileName(CABLE);
-
-    QString cableState;
-
-    if(!cableFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-      qWarning()<<"cant open cable state file";
-    } else {
-      QTextStream in(&cableFile);
-      in >> cableState;
-      cableFile.close();
-
-    }
-
-    if (cableState.toInt())
-      return true;
+  if(!cableFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qWarning()<<"cant open cable state file";
+  } else {
+    QTextStream in(&cableFile);
+    in >> cableState;
+    cableFile.close();
 
   }
 
-  return false;
+  return (bool)cableState.toInt();
 
 }
 
