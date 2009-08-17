@@ -14,7 +14,7 @@
 
 #include "ezxhardware.h"
 #define ADC "/sys/devices/platform/pxa2xx-spi.1/spi1.0/"
-#define SUPPLY "/sys/class/power_supply/"
+#define CABLE "/sys/devices/platform/eoc-regulator/cable"
 #define REGULATOR "/sys/class/regulator/regulator.%1/"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
@@ -116,11 +116,8 @@ bool EzxHardware::cable() {
 
   for (int i = 0; i < cableNames.size(); ++i) {
 
-    QString cableName = QString(SUPPLY "%1/online")
-      .arg(cableNames.at(i));
-
     QFile cableFile;
-    cableFile.setFileName(cableName);
+    cableFile.setFileName(CABLE);
 
     QString cableState;
 
