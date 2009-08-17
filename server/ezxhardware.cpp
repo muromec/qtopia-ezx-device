@@ -15,7 +15,7 @@
 #include "ezxhardware.h"
 #define ADC "/sys/devices/platform/pxa2xx-spi.1/spi1.0/"
 #define SUPPLY "/sys/class/power_supply/"
-#define REGULATOR "/sys/class/regulator/regulator.%/"
+#define REGULATOR "/sys/class/regulator/regulator.%1/"
 
 QTOPIA_TASK(EzxHardware, EzxHardware);
 
