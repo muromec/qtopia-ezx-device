@@ -108,7 +108,7 @@ void EzxVolumeService::setCallDomain()
     e << QString("Headset");
 }
 
-void EzxVolumeService::adjustSpeakerVolume( int left, int right )
+void EzxVolumeService::adjustSpeakerVolume( int value )
 {
 
   initMixer();
@@ -120,11 +120,10 @@ void EzxVolumeService::adjustSpeakerVolume( int left, int right )
           elemName = QString(snd_mixer_selem_get_name( elem));
 
           if(elemName == "Master") { // Master output // could use PCM
+              if(snd_mixer_selem_has_playback_volume( elem) > 0)
+                snd_mixer_selem_set_playback_volume_all(elem, (long)(value*15/100));
 
-              if(snd_mixer_selem_has_playback_volume( elem) > 0) {
-                  snd_mixer_selem_set_playback_volume( elem,SND_MIXER_SCHN_FRONT_LEFT, (long)&left);
-                  snd_mixer_selem_set_playback_volume( elem,SND_MIXER_SCHN_FRONT_RIGHT, (long)&right);
-              }
+              break;
           }
       }
   }
@@ -150,8 +149,8 @@ void EzxVolumeService::adjustVolume(int leftChannel, int rightChannel, AdjustTyp
           right = rightChannel;
       }
 
-      leftright = (left + right) >> 1;
-      adjustSpeakerVolume( left, right );
+      m_d->currVolume = (left + right) >> 1;
+      adjustSpeakerVolume( m_d->currVolume );
 
 }
 
