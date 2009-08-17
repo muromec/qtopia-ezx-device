@@ -158,37 +158,37 @@ void EZXKbdHandler::readData(int fd)
         case SW_LID: qtKeyCode = Qt::Key_Flip; break;
 
         // headphone FIX KERNEL for E2/E6
-        /*
-        case 0x28: qtKeyCode = Qt::Key_F28; repeate = true; releaseOnly = true; break;
+        case KEY_HP: qtKeyCode = Qt::Key_F28; break;
 
+        /*
         case 0x2e: qtKeyCode = Qt::Key_F29; break;
 
         case 0x17: qtKeyCode = Qt::Key_OpenUrl; break;
-        case 0x2d:
-        case 0x2f: qtKeyCode = Qt::Key_LaunchMedia;
-        case 0x2c: qtKeyCode = Qt::Key_MediaPlay; break;
-        case 0x2a: qtKeyCode = Qt::Key_MediaPrevious; break;
-        case 0x2b: qtKeyCode = Qt::Key_MediaNext ; break;
+        case 0x2d:*/
+        case KEY_SOUND: qtKeyCode = Qt::Key_LaunchMedia;
+        case KEY_PLAYPAUSE: qtKeyCode = Qt::Key_MediaPlay; break;
+        case KEY_PREVIOUSSONG: qtKeyCode = Qt::Key_MediaPrevious; break;
+        case KEY_NEXTSONG: qtKeyCode = Qt::Key_MediaNext ; break;
 
         // numpad
-        case 0x00: qtKeyCode = Qt::Key_0; unicode  = 0x30; break;
-        case 0x01: qtKeyCode = Qt::Key_1; unicode  = 0x31; break;
-        case 0x02: qtKeyCode = Qt::Key_2; unicode  = 0x32; break;
-        case 0x03: qtKeyCode = Qt::Key_3; unicode  = 0x33; break;
-        case 0x04: qtKeyCode = Qt::Key_4; unicode  = 0x34; break;
-        case 0x05: qtKeyCode = Qt::Key_5; unicode  = 0x35; break;
-        case 0x06: qtKeyCode = Qt::Key_6; unicode  = 0x36; break;
-        case 0x07: qtKeyCode = Qt::Key_7; unicode  = 0x37; break;
-        case 0x08: qtKeyCode = Qt::Key_8; unicode  = 0x38; break;
-        case 0x09: qtKeyCode = Qt::Key_9; unicode  = 0x39; break;
+        case KEY_NUMERIC_0: qtKeyCode = Qt::Key_0; unicode  = 0x30; break;
+        case KEY_NUMERIC_1: qtKeyCode = Qt::Key_1; unicode  = 0x31; break;
+        case KEY_NUMERIC_2: qtKeyCode = Qt::Key_2; unicode  = 0x32; break;
+        case KEY_NUMERIC_3: qtKeyCode = Qt::Key_3; unicode  = 0x33; break;
+        case KEY_NUMERIC_4: qtKeyCode = Qt::Key_4; unicode  = 0x34; break;
+        case KEY_NUMERIC_5: qtKeyCode = Qt::Key_5; unicode  = 0x35; break;
+        case KEY_NUMERIC_6: qtKeyCode = Qt::Key_6; unicode  = 0x36; break;
+        case KEY_NUMERIC_7: qtKeyCode = Qt::Key_7; unicode  = 0x37; break;
+        case KEY_NUMERIC_8: qtKeyCode = Qt::Key_8; unicode  = 0x38; break;
+        case KEY_NUMERIC_9: qtKeyCode = Qt::Key_9; unicode  = 0x39; break;
 
-        case 0x0b: qtKeyCode = Qt::Key_Asterisk;   unicode  = 0x2A; break;
-        case 0x0a: qtKeyCode = Qt::Key_NumberSign; unicode  = 0x23; break;
+        case KEY_NUMERIC_STAR: qtKeyCode = Qt::Key_Asterisk;   unicode  = 0x2A; break;
+        case KEY_NUMERIC_POUND: qtKeyCode = Qt::Key_NumberSign; unicode  = 0x23; break;
 
-        case 0x13: qtKeyCode = Qt::Key_Back; break;
-        case 0x12: qtKeyCode = Qt::Key_Context1; break;
+        case KEY_F2: qtKeyCode = Qt::Key_Back; break;
+        case KEY_F1: qtKeyCode = Qt::Key_Context1; break;
 
-        case 0x16: qtKeyCode = Qt::Key_Clear; break;*/
+        case KEY_BACK: qtKeyCode = Qt::Key_Clear; break;
 
         case SW_HEADPHONE_INSERT:
                    ipc_arg.setNum(ev.value);
@@ -201,7 +201,6 @@ void EZXKbdHandler::readData(int fd)
      }
 
     processKeyEvent(unicode, qtKeyCode, modifiers, isPress, isAuto );
-    printf("%x %d %d\n",qtKeyCode, isPress, isAuto );
 
 }
 
