@@ -29,25 +29,48 @@
 
 #define BL "/sys/class/backlight/pwm-backlight.0/"
 
+QFile *value = NULL;
+QFile *power = NULL;
+
+#define OPEN_QFILE(x,s,m) { \
+    x = new QFile(); \
+    x->setFileName(BL s); \
+    ret = x->open(m); \
+    if (!ret) { \
+      qWarning()<<"cant open" << s; \
+      delete x; \
+      x = NULL; \
+    } \
+}
+
+#define WO (QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)
+#define RO (QIODevice::ReadOnly | QIODevice::Text)
+
+
 QTOPIABASE_EXPORT int qpe_sysBrightnessSteps()
 {
-    QFile maxBrightness;
+    QFile *maxBrightness;
     QString strvalue;
-    maxBrightness.setFileName(BL "max_brightness");
+    int ret;
 
-    if(!maxBrightness.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning()<<"Bl file not opened";
-    } else {
-        QTextStream in(&maxBrightness);
-        in >> strvalue;
-        maxBrightness.close();
+    OPEN_QFILE(value, "brightness", WO);
+    OPEN_QFILE(power, "bl_power", WO);
+    OPEN_QFILE(maxBrightness, "max_brightness", RO);
+
+    if(maxBrightness) {
+      QTextStream in(maxBrightness);
+      in >> strvalue;
+      maxBrightness->close();
+      delete maxBrightness;
     }
     return  strvalue.toInt();
 }
 
 QTOPIABASE_EXPORT void qpe_setBrightness(int b)
 {
-    char cmd[80];
+
+    if (! (value && power) )
+      return;
 
     int brightessSteps = qpe_sysBrightnessSteps();
     if(b > brightessSteps)
@@ -61,15 +84,21 @@ QTOPIABASE_EXPORT void qpe_setBrightness(int b)
         b = brightessSteps;
     }
 
-    QFile brightness;
-    brightness.setFileName(BL "brightness");
-
-    if(!brightness.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        qWarning()<<"Bl File not opened";
-    } else {
-        QTextStream out(&brightness);
+    if(value) {
+        QTextStream out(value);
         out << QString::number(b);
-        brightness.close();
+    }
+
+    if(power) {
+        QTextStream out(power);
+
+        if (b) {
+          qWarning() << "lcd power on";
+          out << "0";
+        } else {
+          qWarning() << "lcd power off";
+          out << "1";
+        }
     }
 }
 
