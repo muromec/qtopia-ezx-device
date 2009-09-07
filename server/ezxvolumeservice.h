@@ -47,7 +47,7 @@ private slots:
 
 private:
     void adjustVolume(int leftChannel, int rightChannel, AdjustType);
-    void adjustSpeakerVolume(int left, int right);
+    void adjustSpeakerVolume(int value);
 
     int initMixer();
     int closeMixer();
