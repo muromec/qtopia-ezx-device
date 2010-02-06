@@ -35,8 +35,6 @@
 -no-samples
 -lrt
 -sdk /usr/local/angstrom/arm/qtopia
--L/usr/local/angstrom/arm/stage/lib
--I/usr/local/angstrom/arm/stage/include
 -system-sqlite
 
 
