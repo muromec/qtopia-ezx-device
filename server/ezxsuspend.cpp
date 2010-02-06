@@ -65,6 +65,10 @@ bool EzxSuspend::suspend()
 {
     qWarning() << "suspend";
 
+    int rtc = open("/dev/rtc0",O_RDWR);
+    int ret = ioctl(rtc,RTC_UIE_OFF,0);
+    close(rtc);
+
     QFile powerStateFile("/sys/power/state");
     if( !powerStateFile.open(QIODevice::ReadWrite | QIODevice::Text | QIODevice::Truncate)) {
         qWarning()<<"File not opened";
@@ -74,10 +78,6 @@ bool EzxSuspend::suspend()
         powerStateFile.close();
     }
 
-
-    int rtc = open("/dev/rtc0",O_RDWR);
-    int ret = ioctl(rtc,RTC_UIE_OFF,0);
-    close(rtc);
 
     return true;
 }
