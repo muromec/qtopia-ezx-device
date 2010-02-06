@@ -165,8 +165,6 @@ void EzxModemCallProvider::ringing
     // If we already announced an incoming call, then reset the
     // missed call timer but otherwise ignore this.  This prevents
     // us from creating a new incoming call for every new RING.
-    if (number.isEmpty() )
-      return;
 
     if ( incomingCall() ) {
         if ( hasRepeatingRings() )
