@@ -45,12 +45,20 @@
 #include <string.h>
 
 #include <qaudiooutput.h>
+#include "asoc_bp.h"
 
+#define ENABLE(x) set_state(x, 1); 
+#define DISABLE(x) set_state(x, 0);
+#define DISABLE_ALL() set_state(0, 0);
+
+#define _I "Input Mixer "
+#define _O "Output Mixer "
+  
 snd_mixer_t *mixerFd;
 
 int initMixer()
 {
-    int result;
+  int result;
   if ((result = snd_mixer_open( &mixerFd, 0)) < 0) {
         printf("sucks1!\n");
         mixerFd = NULL;
@@ -85,56 +93,26 @@ int closeMixer()
  
 }
 
-void select_item(char *elem_name, char *item) {
-
-
-  int n =0;
+void set_state(char *elem_name, int state)
+{
   snd_mixer_elem_t *elem; 
   for ( elem = snd_mixer_first_elem( mixerFd); elem; elem = snd_mixer_elem_next( elem) ) {
 
-      if (strcmp(elem_name,snd_mixer_selem_get_name( elem)))
+      printf("want %s, found %s\n",
+          elem_name, 
+          snd_mixer_selem_get_name( elem)
+
+      );
+
+      if (elem_name && strcmp(elem_name,snd_mixer_selem_get_name( elem)))
         continue;
 
-      int it;
-      char name[255]; 
+      snd_mixer_selem_set_playback_switch_all(elem, state);
 
-      for (it=0; it<snd_mixer_selem_get_enum_items (elem); it++) {
-        snd_mixer_selem_get_enum_item_name (elem,it,255,name);
-
-        if (! strcmp(item,name)) 
-          break;
-
-      }
-
-      snd_mixer_selem_set_enum_item(elem,SND_MIXER_SCHN_MONO,it);
-
-      break;
 
   }
 
 
-}
-
-static inline bool set_audio_mode(char *path, bool bp, bool stereo)
-{
-
-    initMixer();
-
-    if (bp)
-      select_item("DAI Select","BP");
-    else
-      select_item("DAI Select","Stereo");
-
-    select_item("Output mode",path);
-
-    if (stereo)
-      select_item("Downmixer","Off");
-    else
-      select_item("Downmixer","2->1ch");
-
-    closeMixer();
-
-    return true;
 }
 
 
@@ -360,17 +338,37 @@ bool SpeakerAudioState::isAvailable() const
 
 bool SpeakerAudioState::enter(QAudio::AudioCapability capability)
 {
+  printf("SpeakerAudioState::enter\n");
 
-  if (m_isPhone)
-    return set_audio_mode("Earpiece",m_isPhone,false);
-  else
-    return set_audio_mode("Loudspeaker",m_isPhone,false);
+  initMixer();
+  if (m_isPhone) {
+    ENABLE(_O"A1");
+    ENABLE(_I"A5");
+    open_bp();
+  } else {
+    close_bp();
+    ENABLE(_O"A2");
+  }
+
+  closeMixer();
+
+  return true;
 
 }
 
 bool SpeakerAudioState::leave()
 {
-    return true;
+  initMixer();
+  if (m_isPhone) {
+    DISABLE(_O"A1");
+    DISABLE(_I"A5");
+  } else {
+    DISABLE(_O"A2");
+  }
+
+  closeMixer();
+
+  return true;
 }
 
 class HeadphonesAudioState : public QAudioState
@@ -449,58 +447,27 @@ bool HeadphonesAudioState::isAvailable() const
 bool HeadphonesAudioState::enter(QAudio::AudioCapability capability)
 {
     Q_UNUSED(capability)
-/*
-    int in, out;
-    switch ( headType ) {
 
-      // 2.5 mm headset
-      case MOTO_ACCY_TYPE_HEADSET_MONO:
-        out = DIA25_MONO_HS_OUT;
+    initMixer();
 
-      case MOTO_ACCY_TYPE_HEADSET_STEREO:
-        out = DIA25_STEREO_HS_OUT;
-        in = DIA25_HEADSET_INPUT;
-        break;
+    ENABLE(_O"AR");
+    ENABLE(_O"AL");
 
-      // EMU (miniusb) headset
-      case MOTO_ACCY_TYPE_HEADSET_EMU_MONO:
-        out = MONO_EMUHS_OUT;
-        
-      case MOTO_ACCY_TYPE_HEADSET_EMU_STEREO:
-        if (m_isPhone) 
-          out = STEREO_EMUHS_CALL_OUT;
-        else
-          out = STEREO_EMUHS_MEDIA_OUT;
-        in = EMUHS_INPUT;
-        break;
-
-      // 3.5 mm headset (E2 and E6)
-      case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO:
-          if (m_isPhone)
-            out = DIA35_HS_NOMIC_CALL_OUT;
-          else
-            out = DIA35_HS_NOMIC_MEDIA_OUT;
-
-      case MOTO_ACCY_TYPE_3MM5_HEADSET_STEREO_MIC:
-          if (m_isPhone)
-            out = DIA35_HS_MIC_CALL_OUT;
-          else
-            out = DIA35_HS_MIC_MEDIA_OUT;
-
-          in = DIA35_HS_MIC_CALL_INPUT;
-
-          break;
-    }
-    return set_audio_mode(out,in,m_isPhone);
-*/
-
-    return set_audio_mode("Headset",m_isPhone,!m_isPhone);
+    closeMixer();
+    return true;
 
 
 }
 
 bool HeadphonesAudioState::leave()
 {
+    initMixer();
+
+    DISABLE(_O"AR");
+    DISABLE(_O"AL");
+
+    closeMixer();
+
     return true;
 }
 
@@ -550,12 +517,22 @@ bool SpeakerphoneAudioState::isAvailable() const
 
 bool SpeakerphoneAudioState::enter(QAudio::AudioCapability capability)
 {
-    return set_audio_mode("Loudspeaker",true, false);
+    initMixer();
+    ENABLE(_O"A2"); // loudspeaker
+    ENABLE(_I"A5"); // built-in mic
+    closeMixer();
+
+    return true;
 }
 
 bool SpeakerphoneAudioState::leave()
 {
-      return true;
+    initMixer();
+    DISABLE(_O"A2"); // loudspeaker
+    DISABLE(_I"A5"); // built-in mic
+    closeMixer();
+
+    return true;
 }
 
 class RingtoneAudioState : public QAudioState
