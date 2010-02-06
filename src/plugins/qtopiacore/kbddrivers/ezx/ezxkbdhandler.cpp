@@ -25,6 +25,8 @@
 #include <QScreen>
 #include <QSocketNotifier>
 #include <QtopiaChannel>
+#include <QFile>
+#include <QTextStream>
 
 #include "qscreen_qws.h"
 #include "qwindowsystem_qws.h"
@@ -63,60 +65,140 @@ EZXKbdHandler::EZXKbdHandler()
 
     setObjectName( "EZX Keypad Handler" );
 
-    // normal pxa270 keyboard
-    pxaFD = ::open("/dev/input/event0", O_RDONLY | O_NDELAY, 0);
-    if (pxaFD >= 0)
-    {
-        pxa_notify = new QSocketNotifier(pxaFD, QSocketNotifier::Read, this);
-        connect(pxa_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
-    }
-    else
-    {
-        qWarning("Cannot open pxa keypad (%s)", strerror(errno));
+    char fname[18];
+    char caps[41];
+    int n =0;
+
+    while (1) {
+      sprintf(fname, "/dev/input/event%d", n);
+      printf("file %s\n", fname);
+      if (access(fname, 0))
+        break;
+
+      // skip touchscreen
+      sprintf(caps, "/sys/class/input/input%d/capabilities/abs", n);
+      n++;
+
+      QString cap_value;
+
+      QFile cap_file;
+      cap_file.setFileName(caps);
+      cap_file.open( QIODevice::ReadOnly | QIODevice::Text );
+
+      QTextStream in(&cap_file);
+      in >> cap_value;
+
+      printf("before caps\n");
+      if(cap_value.toInt())
+        continue;
+
+      printf("after caps\n");
+
+      int fd = ::open(fname, O_RDONLY | O_NDELAY, 0);
+
+      if (fd >= 0)
+      {
+          printf("opened %s\n", fname);
+          QSocketNotifier *notify = new QSocketNotifier(
+              fd, QSocketNotifier::Read, this
+          );
+          connect(
+              notify, SIGNAL(activated(int)), 
+              this, SLOT(readData(int))
+          );
+          notifs.append( notify );
+          fds.append( fd );
+      }
+      else
+      {
+          qWarning("Cannot open input %d (%s)", n, strerror(errno));
+          break;
+      }
     }
 
 
-    // flip key
-    gpioFD = ::open("/dev/input/event1", O_RDONLY | O_NDELAY, 0);
-    if (gpioFD >= 0)
-    {
-        gpio_notify = new QSocketNotifier(gpioFD, QSocketNotifier::Read, this);
-        connect(gpio_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
-    }
-    else
-    {
-        qWarning("Cannot open flip device (%s)", strerror(errno));
-    }
-
-
-    // jack event and power key
-    pcapFD = ::open("/dev/input/event2", O_RDONLY | O_NDELAY, 0);
-    if (pcapFD >= 0)
-    {
-        pcap_notify = new QSocketNotifier(pcapFD, QSocketNotifier::Read, this);
-        connect(pcap_notify, SIGNAL(activated(int)), this, SLOT(readData(int)));
-    }
-    else
-    {
-        qWarning("Cannot open pcap events device (%s)", strerror(errno));
-    }
-
+    openTty();
 
 }
 
 EZXKbdHandler::~EZXKbdHandler()
 {
-    if (pxaFD >= 0)
-        ::close(pxaFD);
+    while(! fds.empty() )
+        ::close( fds.takeFirst() );
 
-    if (gpioFD >= 0)
-        ::close(gpioFD);
+    while(! notifs.empty() )
+        delete notifs.takeFirst();
 
-    if (pcapFD >= 0)
-        ::close(pcapFD);
+    closeTty();
 
 }
 
+void EZXKbdHandler::openTty()
+{
+    printf("open fucking raw tty!\n"); 
+    tcgetattr(ttyFd, &origTermData);
+    struct termios termdata;
+    tcgetattr(ttyFd, &termdata);
+
+    ioctl(ttyFd, KDSKBMODE, K_RAW);
+
+    termdata.c_iflag = (IGNPAR | IGNBRK) & (~PARMRK) & (~ISTRIP);
+    termdata.c_oflag = 0;
+    termdata.c_cflag = CREAD | CS8;
+    termdata.c_lflag = 0;
+    termdata.c_cc[VTIME]=0;
+    termdata.c_cc[VMIN]=1;
+    cfsetispeed(&termdata, 9600);
+    cfsetospeed(&termdata, 9600);
+    tcsetattr(ttyFd, TCSANOW, &termdata);
+
+    connect(QApplication::instance(), SIGNAL(unixSignal(int)), this, SLOT(handleTtySwitch(int)));
+    QApplication::instance()->watchUnixSignal(VTACQSIG, true);
+    QApplication::instance()->watchUnixSignal(VTRELSIG, true);
+
+    struct vt_mode vtMode;
+    ioctl(ttyFd, VT_GETMODE, &vtMode);
+
+    // let us control VT switching
+    vtMode.mode = VT_PROCESS;
+    vtMode.relsig = VTRELSIG;
+    vtMode.acqsig = VTACQSIG;
+    ioctl(ttyFd, VT_SETMODE, &vtMode);
+
+    struct vt_stat vtStat;
+    ioctl(ttyFd, VT_GETSTATE, &vtStat);
+
+}
+
+void EZXKbdHandler::closeTty()
+{
+    ioctl(ttyFd, KDSKBMODE, K_XLATE);
+    tcsetattr(ttyFd, TCSANOW, &origTermData);
+    ::close(ttyFd);
+
+}
+
+void EZXKbdHandler::handleTtySwitch(int sig)
+{
+    printf("tty switch!\n");
+
+    if (sig == VTACQSIG) {
+        if (ioctl(ttyFd, VT_RELDISP, VT_ACKACQ) == 0) {
+            qwsServer->enablePainting(true);
+            qt_screen->restore();
+            qwsServer->resumeMouse();
+            qwsServer->refresh();
+        }
+    } else if (sig == VTRELSIG) {
+        qwsServer->enablePainting(false);
+        qt_screen->save();
+        if(ioctl(ttyFd, VT_RELDISP, 1) == 0) {
+            qwsServer->suspendMouse();
+        } else {
+            qwsServer->enablePainting(true);
+        }
+    }
+}
 
 void EZXKbdHandler::readData(int fd)
 {
@@ -134,7 +216,11 @@ void EZXKbdHandler::readData(int fd)
     unsigned short isPress = controlCodeMode[ev.value].f_press;
     unsigned short isAuto  = controlCodeMode[ev.value].f_auto;
 
-   QByteArray ipc_arg;
+    QByteArray ipc_arg;
+
+    // kernel bug
+    if (ev.type == EV_MSC)
+      return;
 
     switch (ev.code)
     {
@@ -191,7 +277,9 @@ void EZXKbdHandler::readData(int fd)
         case KEY_BACK: qtKeyCode = Qt::Key_Clear; break;
 
         case SW_HEADPHONE_INSERT:
-                   ipc_arg.setNum(ev.value);
+        case SW_MICROPHONE_INSERT:
+                   printf("headphone detect %d, %d\n", ev.value, ev.type);
+                   ipc_arg.setNum(!ev.value);
                    QtopiaChannel::send("QPE/Jack", "plug()",ipc_arg);
                    return;
         default:

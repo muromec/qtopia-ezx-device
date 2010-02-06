@@ -26,6 +26,8 @@
 #include <QObject>
 #include <QWSKeyboardHandler>
 
+#include <termios.h>
+#include <linux/kd.h>
 
 class QSocketNotifier;
 
@@ -37,16 +39,21 @@ public:
     ~EZXKbdHandler();
 
 private:
-    QSocketNotifier *pxa_notify;
-    QSocketNotifier *gpio_notify;
-    QSocketNotifier *pcap_notify;
 
-    int  pxaFD;
-    int  gpioFD;
-    int  pcapFD;
+    QList<int> fds;
+    QList<QSocketNotifier *> notifs;
+
+    int ttyFd;
+
+    void openTty();
+    void closeTty();
+    struct termios origTermData;
+
 
 private Q_SLOTS:
     void readData(int fd);
+    void handleTtySwitch(int sig);
+
 };
 
 
