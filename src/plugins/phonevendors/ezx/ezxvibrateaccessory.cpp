@@ -6,9 +6,9 @@
 #include <QTextStream>
 
 #include "ezxvibrateaccessory.h"
-#define VIB "/sys/bus/platform/devices/reg-virt-consumer.0/"
+#define VIB "/sys/class/leds/a1200::vibrator/brightness"
 #define VIB_OFF "0"
-#define VIB_ON "2000000"
+#define VIB_ON "2"
 
 #define WO (QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)
 
@@ -24,18 +24,8 @@ EZXVibrateAccessory::EZXVibrateAccessory
     setSupportsVibrateOnRing( true );
     setSupportsVibrateNow( false );
 
-    QFile *max = new QFile();
-    max->setFileName(VIB"max_microvolts");
-    max->open(WO);
-
-    QTextStream o(max);
-    o << VIB_ON;
-
-    max->close();
-    delete max;
-
     value = new QFile();
-    value->setFileName(VIB"min_microvolts");
+    value->setFileName(VIB);
     value->open(WO);
 
 }
